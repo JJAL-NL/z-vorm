@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="/2-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- SEO & Open Graph Meta Tags -->
+    <title>Z-Vorm Shop | Custom 3D-Printed Wall Displays, Hexagon Medals &amp; Sports Gear</title>
+    <meta name="description" content="Custom 3D-printed wall displays, hexagon medal hangers, Hyrox &amp; running gear, and unique DIY accessories. Engineered in-house. Fast EU shipping to NL, BE &amp; DE.">
+    <meta name="keywords" content="running, runner, hyrox, medal, wall display, hexagon medals, hardlopen, hardloper, medaille, wanddisplay, zeshoekige medailles, laufen, läufer, medaillen, wandhalterung, sechseckiges medaillen display, 3D printing on demand">
+    <link rel="canonical" href="https://z-vorm.nl/shop">
+
+    <meta property="og:title" content="Z-Vorm Shop | Custom Wall Displays, Hexagon Medals &amp; Sports Gear">
+    <meta property="og:description" content="Precision 3D-printed wall displays, running &amp; Hyrox hexagon medal holders, and custom gear engineered and crafted in our workshop.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://z-vorm.nl/shop">
+    <meta property="og:image" content="https://z-vorm.nl/logo.png">
+
+    <!-- Twitter / X Card Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Z-Vorm Shop | Custom Wall Displays &amp; Hexagon Medals">
+    <meta name="twitter:description" content="Precision 3D-printed running, runner, and Hyrox hexagon medal wall displays crafted in-house.">
+    <meta name="twitter:image" content="https://z-vorm.nl/logo.png">
+
+    <!-- Structured Data (Schema.org for E-Commerce / Maker Workshop) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org/",
+      "@type": "LocalBusiness",
+      "name": "Z-Vorm Workshop",
+      "image": "https://z-vorm.nl/logo.png",
+      "@id": "https://z-vorm.nl",
+      "url": "https://z-vorm.nl/shop",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Retie",
+        "addressCountry": "BE"
+      },
+      "description": "Custom 3D printing on demand, running and Hyrox hexagon medal wall displays, and specialized sports gear crafted with industrial precision."
+    }
+    </script>
+
+    <!-- Geometric Industrial Font (Montserrat) -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- Three.js and OrbitControls for Viewer Compatibility -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body style="background-color: #f8fafc;">
+
+    <!-- Minimalist Retail Header -->
+    <header style="background: white; border-bottom: 1px solid var(--border); padding: 1.2rem 5%; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100;">
+        <a href="/shop" style="text-decoration: none; display: flex; align-items: center;">
+            <img src="logo.png" alt="Z-Vorm Logo" style="height: 50px; width: auto; object-fit: contain;">
+        </a>
+        <div style="display: flex; align-items: center; gap: 1.5rem;">
+            <span style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--primary);">Official Social Store</span>
+            <a href="javascript:void(0)" onclick="openContactModal()" style="font-size: 0.8rem; font-weight: 700; text-decoration: none; color: var(--text-muted); transition: color 0.2s;" onmouseenter="this.style.color='var(--text-main)'" onmouseleave="this.style.color='var(--text-muted)'">Contact Workshop</a>
+            <span style="color: var(--border);">|</span>
+            <a href="/" style="font-size: 0.8rem; font-weight: 700; text-decoration: none; color: var(--text-muted); transition: color 0.2s;" onmouseenter="this.style.color='var(--text-main)'" onmouseleave="this.style.color='var(--text-muted)'">B2B Portal →</a>
+        </div>
+    </header>
+
+    <!-- Retail Hero Section -->
+    <section style="background: radial-gradient(circle at 50% 20%, #1e293b 0%, #0f172a 100%); color: white; padding: 5rem 2rem 4.5rem 2rem; text-align: center; margin-bottom: 3rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08); position: relative; overflow: hidden;">
+        <div style="max-width: 850px; margin: 0 auto; position: relative; z-index: 2;">
+            
+            <!-- Pill Badge -->
+            <span style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--primary); background: rgba(249, 115, 22, 0.12); border: 1px solid rgba(249, 115, 22, 0.3); padding: 0.35rem 0.9rem; border-radius: 20px; display: inline-block; margin-bottom: 1.2rem;">
+                ENGINEERED & CRAFTED IN OUR WORKSHOP
+            </span>
+
+            <!-- Main Heading -->
+            <h1 style="font-size: 2.7rem; font-weight: 800; line-height: 1.15; margin-bottom: 1.2rem; color: #ffffff; letter-spacing: -0.5px;">
+                Custom Wall Displays, Hexagon Medals &amp; Sports Gear
+            </h1>
+
+            <!-- Subtitle -->
+            <p style="font-size: 1.05rem; color: #94a3b8; line-height: 1.6; margin-bottom: 2.5rem; max-width: 680px; margin-left: auto; margin-right: auto;">
+                Every custom wall display frame, specialized tool, and unique gadget is designed from scratch and 3D-printed with care. Built to perform, shaped by our obsession with precision.
+            </p>
+
+            <!-- Trust Badges Row -->
+            <div style="display: flex; justify-content: center; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
+                <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600; color: #e2e8f0; display: flex; align-items: center; gap: 0.4rem;">
+                    <span style="color: var(--primary);">✓</span> Fast EU Dispatch
+                </div>
+                <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600; color: #e2e8f0; display: flex; align-items: center; gap: 0.4rem;">
+                    <span style="color: var(--primary);">✓</span> Secure &amp; Simple Checkout
+                </div>
+                <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600; color: #e2e8f0; display: flex; align-items: center; gap: 0.4rem;">
+                    <span style="color: var(--primary);">✓</span> Top-Rated Etsy Creator
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Main Catalog Container -->
+    <main style="max-width: 1100px; margin: 0 auto 5rem auto; padding: 0 2rem;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <div>
+                <h2 style="font-size: 1.8rem; font-weight: 800;">Available Products</h2>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">Click any item to inspect options, choose custom colors, and checkout instantly.</p>
+            </div>
+        </div>
+
+        <!-- Dynamic Product Grid -->
+        <div id="catalog-grid" class="capabilities-grid" style="margin-top: 1rem;">
+            <!-- Populated dynamically via app.js -->
+        </div>
+
+    </main>
+
+    <!-- Product Detail Modal -->
+    <div id="product-modal" onclick="closeProductModalOnBackground(event)" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px); padding: 1rem;">
+        <div style="background: white; width: 950px; max-width: 95%; max-height: 85vh; border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); display: grid; grid-template-columns: 1fr 1fr; position: relative;" onclick="event.stopPropagation()">
+            
+            <button onclick="closeProductModal()" title="Close" style="position: absolute; top: 1.2rem; right: 1.2rem; background: transparent; border: none; cursor: pointer; font-weight: 700; font-size: 1.3rem; color: var(--text-main); display: flex; align-items: center; justify-content: center; z-index: 10; transition: color 0.2s;" onmouseenter="this.style.color='var(--primary)'" onmouseleave="this.style.color='var(--text-main)'">✕</button>
+
+            <!-- Left: Image Gallery -->
+            <div style="background: #f8fafc; padding: 2rem; display: flex; flex-direction: column; gap: 1rem; align-items: center; justify-content: center; border-right: 1px solid var(--border); position: relative;">
+                <div style="position: relative; width: 100%; height: 320px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border);">
+                    <img id="modal-main-img" src="" alt="Product Preview" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+                <div id="modal-thumbnails" style="display: flex; gap: 0.5rem; overflow-x: auto; width: 100%; justify-content: center;"></div>
+            </div>
+
+            <!-- Right: Content Column with Adaptive Description Box -->
+            <div style="padding: 2.5rem; max-height: 85vh; display: flex; flex-direction: column; justify-content: space-between; gap: 1rem; overflow: hidden;">
+                
+                <!-- TOP STATIC SECTION: Badge, Title, Price -->
+                <div style="flex-shrink: 0;">
+                    <div id="modal-lead-badge" style="display: none; font-size: 0.75rem; color: #0284c7; background: #e0f2fe; padding: 0.25rem 0.6rem; border-radius: 4px; font-weight: 600; margin-bottom: 0.6rem; width: fit-content;"></div>
+                    <h2 id="modal-title" style="font-size: 1.6rem; margin-bottom: 0.3rem; color: var(--text-main);"></h2>
+                    <p id="modal-price" style="font-size: 1.3rem; font-weight: 800; color: var(--primary); margin-bottom: 0.5rem;"></p>
+                </div>
+
+                <!-- MIDDLE ADAPTIVE SECTION: Expands based on browser height -->
+                <div style="overflow-y: auto; flex-grow: 1; max-height: 32vh; min-height: 130px; padding-right: 0.4rem;">
+                    <p id="modal-desc" style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; margin: 0;"></p>
+                </div>
+
+                <!-- BOTTOM STATIC SECTION: Size, Custom Text, Colors, Qty & Checkout -->
+                <div style="flex-shrink: 0; display: flex; flex-direction: column; gap: 1rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+                    
+                    <!-- Size Selection Container -->
+                    <div style="display: none;" id="modal-size-container">
+                        <label style="font-size: 0.8rem; font-weight: 700; display: block; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.5px;">Select Size</label>
+                        <div id="modal-size-swatches" style="display: flex; gap: 0.6rem; flex-wrap: wrap;"></div>
+                    </div>
+
+                    <!-- Custom Text / Engraving Container -->
+                    <div style="display: none;" id="modal-custom-text-container">
+                        <label style="font-size: 0.80rem; font-weight: 700; display: block; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.5px;">Custom Engraving / Text</label>
+                        <input type="text" id="modal-custom-text-input" placeholder="Enter custom text..." style="width: 100%; padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); font-size: 0.9rem;">
+                    </div>
+
+                    <!-- Color Selection -->
+                    <div id="modal-color-container">
+                        <label style="font-size: 0.8rem; font-weight: 700; display: block; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.5px;">Select Color</label>
+                        <div id="modal-color-swatches" style="display: flex; gap: 0.6rem; flex-wrap: wrap;"></div>
+                    </div>
+
+                    <!-- Quantity & Total Price Row -->
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <label style="font-size: 0.8rem; font-weight: 700; display: block; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.5px;">Quantity</label>
+                            <div style="display: flex; align-items: center; gap: 0.5px; width: 110px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--bg-card);">
+                                <button type="button" onclick="adjustQty(-1)" style="padding: 0.4rem 0.7rem; background: none; border: none; cursor: pointer; font-weight: bold; font-size: 1rem;">-</button>
+                                <input type="number" id="modal-qty" value="1" min="1" max="99" onchange="updateTotalPrice()" style="width: 35px; text-align: center; border: none; background: none; font-weight: 600; font-size: 0.9rem;">
+                                <button type="button" onclick="adjustQty(1)" style="padding: 0.4rem 0.7rem; background: none; border: none; cursor: pointer; font-weight: bold; font-size: 1rem;">+</button>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); display: block;">Total Price</span>
+                            <span id="modal-total-price" style="font-size: 1.3rem; font-weight: 800; color: var(--text-main);">€0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button onclick="submitShopOrder()" style="width: 100%; background: var(--primary); color: white; border: none; padding: 0.8rem; border-radius: 8px; font-weight: 700; cursor: pointer; transition: background 0.2s;">Add to Cart & Checkout →</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Workshop Modal -->
+    <div id="contact-modal" onclick="closeContactModalOnBackground(event)" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 4000; align-items: center; justify-content: center; backdrop-filter: blur(4px); padding: 1rem;">
+        <div style="background: white; width: 500px; max-width: 90%; border-radius: 16px; padding: 2.5rem; position: relative; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);" onclick="event.stopPropagation()">
+            
+            <button onclick="closeContactModal()" title="Close" style="position: absolute; top: 1.2rem; right: 1.2rem; background: transparent; border: none; cursor: pointer; font-weight: 700; font-size: 1.3rem; color: var(--text-main); display: flex; align-items: center; justify-content: center; z-index: 10; transition: color 0.2s;" onmouseenter="this.style.color='var(--primary)'" onmouseleave="this.style.color='var(--text-main)'">✕</button>
+
+            <h3 style="font-size: 1.4rem; margin-bottom: 0.4rem; color: var(--text-main);">Message the Workshop</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.4;">Have a question about custom dimensions, colors, or specialized orders? Drop us a note.</p>
+
+            <form onsubmit="submitWorkshopMessage(event)" style="display: flex; flex-direction: column; gap: 1rem;">
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 700; display: block; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.5px;">Your Name</label>
+                    <input type="text" name="name" required placeholder="John Doe" style="width: 100%; padding: 0.7rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); font-size: 0.9rem;">
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 700; display: block; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.5px;">Email Address</label>
+                    <input type="email" name="email" required placeholder="john@example.com" style="width: 100%; padding: 0.7rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); font-size: 0.9rem;">
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 700; display: block; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.5px;">Message / Custom Request</label>
+                    <textarea name="message" rows="4" required placeholder="Describe what you're looking for..." style="width: 100%; padding: 0.7rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); font-size: 0.9rem; resize: vertical;"></textarea>
+                </div>
+                <button type="submit" style="width: 100%; background: var(--primary); color: white; border: none; padding: 0.8rem; border-radius: 8px; font-weight: 700; cursor: pointer; transition: background 0.2s; margin-top: 0.5rem;">Send Message →</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Script to load products on this dedicated page -->
+    <script src="app.js"></script>
+    <script>
+        // Explicitly fetch and render the shop catalog when shop.html loads
+        document.addEventListener("DOMContentLoaded", () => {
+            if (typeof fetchShopProducts === 'function') {
+                fetchShopProducts();
+            }
+        });
+    </script>
+</body>
+</html>

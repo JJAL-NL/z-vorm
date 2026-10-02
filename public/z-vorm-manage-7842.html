@@ -454,17 +454,31 @@
             const deleteBoxes = document.querySelectorAll('.img-delete-checkbox');
             
             let imageDataList = [];
+            let deleteList = [];
+
             orderInputs.forEach(inp => {
                 const url = inp.dataset.url;
                 const order = parseInt(inp.value) || 99;
                 const isDeleted = Array.from(deleteBoxes).some(b => b.value === url && b.checked);
-                if (!isDeleted) {
+                
+                if (isDeleted) {
+                    deleteList.push(url);
+                } else {
                     imageDataList.push({ url, order });
                 }
             });
 
             imageDataList.sort((a, b) => a.order - b.order);
             document.getElementById('updated-images-order').value = JSON.stringify(imageDataList.map(i => i.url));
+
+            // Dynamically append hidden delete inputs so server.js receives them
+            deleteList.forEach(url => {
+                const hiddenDel = document.createElement('input');
+                hiddenDel.type = 'hidden';
+                hiddenDel.name = 'deleteImages';
+                hiddenDel.value = url;
+                this.appendChild(hiddenDel);
+            });
         });
 
         function editMaterial(id) {

@@ -10,6 +10,7 @@ const { Resend } = require('resend');
 const { MongoClient } = require('mongodb');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const { createMollieClient } = require('@mollie/api-client');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -84,6 +85,11 @@ const storage = new CloudinaryStorage({
 const uploadProductImages = multer({ storage: storage });
 const contactUpload = multer({ dest: path.join(__dirname, 'uploads/') });
 
+// Initialize Mollie Client
+const mollieClient = createMollieClient({ 
+    apiKey: process.env.MOLLIE_API_KEY || 'test_your_mollie_api_key_here' 
+});
+
 // ----------------------------------------------------
 // MongoDB Atlas Database Setup & Auto-Migration
 // ----------------------------------------------------
@@ -150,6 +156,11 @@ async function saveSettings(data) {
 // ----------------------------------------------------
 // Express API Routes (Async MongoDB Queries)
 // ----------------------------------------------------
+
+// Dedicated B2C Social Media Catalog Landing Page Route
+app.get('/shop', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'shop.html'));
+});
 
 app.get('/api/admin/data', async (req, res) => {
     res.json(await getSettings());
@@ -399,6 +410,96 @@ app.get('/api/admin/analytics', async (req, res) => {
         filamentUsed: filamentUsed.toFixed(2), 
         activeQuotes 
     });
+});
+
+// ----------------------------------------------------
+// Mollie Checkout Payment Route
+// ----------------------------------------------------
+app.post('/api/create-payment', async (req, res) => {
+    try {
+        // Fallback check if Mollie API key isn't configured yet
+        if (!process.env.MOLLIE_API_KEY || process.env.MOLLIE_API_KEY.includes('test_your_mollie')) {
+            return res.status(400).json({ 
+                error: 'Online payments are currently being configured. Please use "Contact Workshop" for your order.' 
+            });
+        }
+
+        const { cartItems, shippingDetails } = req.body;
+        
+        if (!cartItems || cartItems.length === 0) {
+            return res.status(400).json({ error: 'Your shopping bag is empty.' });
+        }
+
+        const totalAmount = cartItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
+        const orderId = 'ORD_' + Date.now();
+
+        const payment = await mollieClient.payments.create({
+            amount: {
+                currency: 'EUR',
+                value: totalAmount.toFixed(2),
+            },
+            description: `Z-Vorm Webshop Order (${orderId})`,
+            redirectUrl: `${req.protocol}://${req.get('host')}/shop?order=success&ref=${orderId}`,
+            webhookUrl: `${req.protocol}://${req.get('host')}/api/mollie-webhook`,
+            metadata: {
+                orderId,
+                shippingDetails,
+                cartItems
+            }
+        });
+
+        if (ordersCollection) {
+            await ordersCollection.insertOne({
+                id: orderId,
+                date: new Date().toISOString(),
+                customerName: `${shippingDetails.firstName} ${shippingDetails.lastName}`,
+                email: shippingDetails.email,
+                subject: 'B2C Webshop Order',
+                message: `Shipping to: ${shippingDetails.street}, ${shippingDetails.postalCode} ${shippingDetails.city}, ${shippingDetails.country}`,
+                quantity: cartItems.reduce((sum, i) => sum + i.qty, 0),
+                status: 'Payment Pending',
+                assignedPrinter: 'Unassigned',
+                totalPrice: totalAmount,
+                estimatedWeightKg: 0
+            });
+        }
+
+        res.json({ checkoutUrl: payment.getCheckoutUrl() });
+    } catch (err) {
+        console.error('Mollie payment creation error:', err);
+        res.status(500).json({ error: 'Failed to initialize payment gateway.' });
+    }
+});
+
+// Mollie Webhook Endpoint
+app.post('/api/mollie-webhook', async (req, res) => {
+    const paymentId = req.body.id;
+    try {
+        const payment = await mollieClient.payments.get(paymentId);
+        const orderId = payment.metadata && payment.metadata.orderId;
+
+        if (payment.isPaid()) {
+            console.log(`Payment ${paymentId} for order ${orderId} was successfully paid!`);
+            if (ordersCollection && orderId) {
+                await ordersCollection.updateOne(
+                    { id: orderId },
+                    { $set: { status: 'Paid' } }
+                );
+            }
+        } else if (payment.isCanceled() || payment.isExpired()) {
+            console.log(`Payment ${paymentId} was canceled or expired.`);
+            if (ordersCollection && orderId) {
+                await ordersCollection.updateOne(
+                    { id: orderId },
+                    { $set: { status: 'Cancelled' } }
+                );
+            }
+        }
+        res.status(200).send('Webhook received');
+    } catch (err) {
+        console.error('Webhook error:', err);
+        res.status(500).send('Webhook processing failed');
+    }
 });
 
 // ----------------------------------------------------
