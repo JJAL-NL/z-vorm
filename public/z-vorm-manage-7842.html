@@ -81,12 +81,12 @@
 
         <!-- Navigation Tabs -->
         <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('products', this)">Catalog Products</button>
-            <button class="tab-btn" onclick="switchTab('materials', this)">Materials & Pricing</button>
-            <button class="tab-btn" onclick="switchTab('calculator', this)">Calculator</button>
-            <button class="tab-btn" onclick="switchTab('queue', this)">Print Queue</button>
-            <button class="tab-btn" onclick="switchTab('analytics', this)">Analytics</button>
-            <button class="tab-btn" onclick="switchTab('infra', this)">Infrastructure</button>
+            <button class="tab-btn active" data-tab="products">Catalog Products</button>
+            <button class="tab-btn" data-tab="materials">Materials & Pricing</button>
+            <button class="tab-btn" data-tab="calculator">Calculator</button>
+            <button class="tab-btn" data-tab="queue">Print Queue</button>
+            <button class="tab-btn" data-tab="analytics">Analytics</button>
+            <button class="tab-btn" data-tab="infra">Infrastructure</button>
         </div>
 
         <!-- Products Panel -->
@@ -446,7 +446,7 @@
                 addProductColorInput('Matte Black', '#111111');
             }
 
-            switchTab('products');
+            switchTab('products', document.querySelector('[data-tab="products"]'));
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -510,7 +510,7 @@
                 m.colors.forEach(c => addColorInput(c.name, c.hex));
             }
 
-            switchTab('materials');
+            switchTab('materials', document.querySelector('[data-tab="materials"]'));
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -695,6 +695,16 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             loadAdminData();
+            addProductColorInput('Matte Black', '#111111');
+            addColorInput('Matte Black', '#111111');
+
+            // Attach clean event listeners to tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabId = btn.getAttribute('data-tab');
+                    switchTab(tabId, btn);
+                });
+            });
         });
     </script>
 </body>
