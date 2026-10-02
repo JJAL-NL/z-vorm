@@ -1,0 +1,13 @@
+{
+  "calculator": {
+    "materialCostPerKg": 20.00,
+    "powerCostPerKWh": 0.20,
+    "printerWattage": 150,
+    "profitMargin": 0.30,
+    "baseShipping": 7.00
+  },
+  "products": [
+    { "id": 1, "name": "VeloDock Wall Mount", "price": 34.99, "category": "Shop" },
+    { "id": 2, "name": "Hexagon Medal Hanger", "price": 24.99, "category": "Shop" }
+  ]
+}

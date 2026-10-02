@@ -1,0 +1,89 @@
+{
+  "calculator": {
+    "powerCostPerKWh": 0.25,
+    "printerWattage": 150,
+    "profitMargin": 0.7,
+    "baseShipping": 0
+  },
+  "materials": [
+    {
+      "id": "pla",
+      "name": "PLA +",
+      "pricePerKg": 100,
+      "multiplier": 1,
+      "colors": [
+        {
+          "name": "Black",
+          "hex": "#000000"
+        },
+        {
+          "name": "White",
+          "hex": "#ffffff"
+        }
+      ],
+      "description": "TEst"
+    },
+    {
+      "id": "petg",
+      "name": "PETG",
+      "pricePerKg": 120,
+      "multiplier": 1.2,
+      "colors": [
+        {
+          "name": "Red",
+          "hex": "#e58b8b"
+        },
+        {
+          "name": "Black",
+          "hex": "#000000"
+        }
+      ],
+      "description": ""
+    },
+    {
+      "id": "nylon",
+      "name": "ABS",
+      "pricePerKg": 150,
+      "multiplier": 1.6,
+      "colors": [
+        {
+          "name": "Black",
+          "hex": "#000000"
+        },
+        {
+          "name": "Blue",
+          "hex": "#634abf"
+        }
+      ],
+      "description": ""
+    }
+  ],
+  "products": [
+    {
+      "id": 1,
+      "name": "VeloDock Wall Mount",
+      "price": 15,
+      "category": "Shop",
+      "image": "/uploads/1790899012395.PNG",
+      "description": ""
+    },
+    {
+      "id": 2,
+      "name": "Hexagon Medal Hanger",
+      "price": 10,
+      "category": "Shop",
+      "image": "/uploads/1790899043197.png",
+      "description": ""
+    },
+    {
+      "id": 1790902007454,
+      "name": "Medal wall display ",
+      "price": 10,
+      "description": "ideal for medals",
+      "category": "Shop",
+      "images": [
+        "/uploads/1790902005996-417864355.png"
+      ]
+    }
+  ]
+}

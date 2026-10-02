@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Z-Vorm | Custom 3D Manufacturing</title>
+    <!-- Geometric Industrial Font (Montserrat) -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- Three.js for the STL Viewer -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+</head>
+<body>
+   <header>
+        <!-- Logo Image with proper scaling -->
+        <a href="#" onclick="showSection('home')" style="text-decoration: none; display: flex; align-items: center;">
+            <img src="logo.png" alt="Z-Vorm Logo">
+        </a>
+        <nav>
+            <button onclick="showSection('home')">Home</button>
+            <button onclick="showSection('services')">Services</button>
+            <button onclick="showSection('b2c-shop')">Shop (B2C)</button>
+            <button onclick="showSection('b2b-portal')">Engineering (B2B)</button>
+            <button onclick="showSection('contact')">Contact</button>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Home / Split View -->
+        <section id="home" class="active-section">
+            
+            <!-- Full-Page Background Video -->
+            <video autoplay loop muted playsinline id="bg-video">
+                <source src="background.mp4" type="video/mp4">
+            </video>
+            <div class="video-overlay"></div>
+
+            <!-- Content wrapped so it sits above the video -->
+            <div class="home-content">
+                <h1>Precision 3D Printing<br>& Manufacturing</h1>
+                <p style="color: var(--text-muted); font-size: 1.2rem; margin-bottom: 2rem;">Select your path below to get started.</p>
+                <div class="split-container">
+                    <div class="split-card" onclick="showSection('b2c-shop')">
+                        <h2>Consumer Shop</h2>
+                        <p>Browse on-demand prints, VeloDock mounts, medal hangers, and custom home accessories.</p>
+                    </div>
+                    <div class="split-card" onclick="showSection('b2b-portal')">
+                        <h2>B2B & Engineering</h2>
+                        <p>Upload STLs for instant quotes or consult on mechanical designs and rapid prototyping.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Services Section -->
+        <section id="services" class="hidden-section">
+            <h2>Our Services</h2>
+            <p style="color: var(--text-muted); margin-bottom: 3rem;">Professional manufacturing, customization, and finishing services.</p>
+            
+            <div class="capabilities-grid">
+                <div class="cap-card">
+                    <h3>3D Printing</h3>
+                    <p>High-quality FDM printing for prototypes, custom parts, and production runs using premium and industrial filaments.</p>
+                </div>
+                <div class="cap-card">
+                    <h3>Engraving</h3>
+                    <p>Precision engraving for personalization, product branding, and detailed custom part marking.</p>
+                </div>
+                <div class="cap-card">
+                    <h3>Mechanical Design</h3>
+                    <p>Comprehensive Fusion CAD modeling to bring your sketches and ideas to life for manufacturing.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- B2C Shop Section -->
+        <section id="b2c-shop" class="hidden-section">
+            <h2>Z-Vorm Catalog</h2>
+            <p style="color: var(--text-muted); margin-bottom: 3rem;">Direct to consumer on-demand manufacturing and home accessories.</p>
+            
+            <!-- Product Grid -->
+            <div class="capabilities-grid">
+                <div class="cap-card">
+                    <h3>VeloDock Wall Mount</h3>
+                    <p>Premium bicycle wall mount system. Compatible with Shimano SPD-SL cleats.</p>
+                </div>
+                <div class="cap-card">
+                    <h3>Hexagon Medal Hanger</h3>
+                    <p>Modular, expandable display system for sports and racing medals.</p>
+                </div>
+                <div class="cap-card">
+                    <h3>Trading Card Frames</h3>
+                    <p>Custom-fit display cases for collectible trading cards.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- B2B Portal Section -->
+        <section id="b2b-portal" class="hidden-section">
+            <h2>Engineering & On-Demand Manufacturing</h2>
+            <p style="color: var(--text-muted); margin-bottom: 3rem;">Upload your STL for an instant volume-based quote, or consult with us for custom Fusion CAD modeling and mechanical engineering.</p>
+            
+            <!-- Process Steps UI -->
+            <div class="process-steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h4>Upload STL</h4>
+                </div>
+                <div class="step-line"></div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h4>Select Material</h4>
+                </div>
+                <div class="step-line"></div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h4>Instant Quote</h4>
+                </div>
+                <div class="step-line"></div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <h4>Production</h4>
+                </div>
+            </div>
+
+            <!-- Upload Area & Viewer -->
+            <div class="upload-area">
+                <h3>Get an Instant Estimate</h3>
+                <input type="file" id="stl-upload" accept=".stl">
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: -10px; margin-bottom: 20px;">Secure, local file processing. Models are not stored without consent.</p>
+                
+                <!-- 3D Viewer mapped to the clean background -->
+                <div id="3d-viewer" style="width: 100%; height: 400px; background-color: #f8fafc;"></div>
+            </div>
+
+            <!-- Z-Vorm Specific Capabilities Grid -->
+            <div class="capabilities-grid">
+                <div class="cap-card">
+                    <h3>Precision FDM</h3>
+                    <p>High-speed, tight-tolerance manufacturing utilizing advanced enclosed systems including Creality K2 and CR-6 SE.</p>
+                </div>
+                <div class="cap-card">
+                    <h3>Industrial Materials</h3>
+                    <p>Printing in standard PLA, robust PLA/PHA, ColorFabb, Sunlu, and eSUN engineering filaments.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section id="contact" class="hidden-section">
+            <h2>Contact Z-Vorm</h2>
+            <p style="color: var(--text-muted); margin-bottom: 3rem;">Reach out for custom projects, bulk orders, or general inquiries.</p>
+            
+            <div class="capabilities-grid">
+                <div class="cap-card" style="text-align: center;">
+                    <h3>Email</h3>
+                    <p>info@z-vorm.com</p>
+                </div>
+                <div class="cap-card" style="text-align: center;">
+                    <h3>Location</h3>
+                    <p>Retie, Belgium</p>
+                </div>
+                <div class="cap-card" style="text-align: center;">
+                    <h3>Business Hours</h3>
+                    <p>Monday - Friday<br>09:00 - 17:00</p>
+                </div>
+            </div>
+
+            <div class="custom-project" style="margin-top: 4rem; text-align: center; background: #ffffff; border: 1px solid var(--border); padding: 3rem; border-radius: 16px;">
+                <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">Send us a message</h3>
+                <p style="color: var(--text-muted); margin-bottom: 2rem;">Ready to start your project or have a question about our services?</p>
+                <button>Email Engineering Team</button>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
