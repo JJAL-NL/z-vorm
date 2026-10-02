@@ -8,7 +8,7 @@ const helmet = require('helmet');
 const { exec } = require('child_process');
 
 const app = express();
-app.set('trust proxy', 1); // <--- Added to trust Render's load balancer proxy headers
+app.set('trust proxy', 1); // Trust Render's load balancer proxy headers
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
@@ -37,7 +37,7 @@ app.use((req, res, next) => {
 // Brute-force protection: generous limit for normal admin use, plus manual reset support
 const adminLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Increased to 100 requests so normal workflow never locks you out
+    max: 100, // 100 requests so normal workflow never locks you out
     message: 'Too many requests from this IP, please try again after 15 minutes.',
     standardHeaders: true,
     legacyHeaders: false,
@@ -81,7 +81,8 @@ function syncChangesToGitHub() {
         return;
     }
 
-    const repo = process.env.GITHUB_REPO; // e.g., github.com/JUAL93/Z-Vorm
+    // Sanitize repo string to strip any trailing slashes or duplicate .git extensions
+    const cleanRepo = process.env.GITHUB_REPO.trim().replace(/\/+$/, '').replace(/\.git$/, '');
     const token = process.env.GH_PAT;
 
     const command = `rm -f .git/index.lock && ` +
@@ -90,7 +91,7 @@ function syncChangesToGitHub() {
                     `git add data/settings.json public/uploads/ && ` +
                     `git diff-index --quiet HEAD || (` +
                     `git commit -m "Auto-sync: Admin update [skip ci]" && ` +
-                    `git push https://${token}@${repo}.git main)`;
+                    `git push https://${token}@${cleanRepo}.git main)`;
 
     exec(command, (error, stdout, stderr) => {
         if (error) {
