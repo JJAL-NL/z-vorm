@@ -403,6 +403,198 @@
             }
         }
 
+        function editProduct(id) {
+            const p = cachedProducts.find(item => item.id == id);
+            if (!p) return;
+
+            document.getElementById('product-form-title').innerText = `Edit Product: ${p.name}`;
+            document.getElementById('product-form').action = `/api/admin/products/update/${p.id}`;
+            document.getElementById('edit-prod-id').value = p.id;
+            document.getElementById('prod-name').value = p.name;
+            document.getElementById('prod-price').value = p.price;
+            document.getElementById('prod-desc').value = p.description || '';
+            document.getElementById('prod-sizes').value = p.sizes || '';
+            document.getElementById('prod-badge').value = p.leadTimeBadge || '';
+            document.getElementById('prod-custom').value = p.customTextEnabled ? 'true' : 'false';
+            document.getElementById('prod-visible').value = p.isVisible === false ? 'false' : 'true';
+            document.getElementById('product-submit-btn').innerText = 'Save Changes';
+            document.getElementById('product-cancel-btn').style.display = 'block';
+
+            const imgContainer = document.getElementById('image-sorting-container');
+            const managerDiv = document.getElementById('existing-images-manager');
+            const images = p.images && p.images.length > 0 ? p.images : [p.image || '/uploads/default.jpg'];
+            
+            managerDiv.style.display = 'block';
+            imgContainer.innerHTML = images.map((img, idx) => `
+                <div style="background: white; border: 1px solid var(--border); padding: 0.5rem; border-radius: 6px; display: flex; flex-direction: column; align-items: center; gap: 0.4rem;">
+                    <img src="${img}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
+                    <div style="display: flex; gap: 0.3rem; align-items: center; font-size: 0.75rem;">
+                        <span>Order:</span>
+                        <input type="number" class="img-order-input" data-url="${img}" value="${idx + 1}" style="width: 40px; padding: 0.2rem; text-align: center;">
+                    </div>
+                    <label style="font-size: 0.7rem; color: #ef4444; cursor: pointer;">
+                        <input type="checkbox" class="img-delete-checkbox" value="${img}"> Delete
+                    </label>
+                </div>
+            `).join('');
+
+            const colorContainer = document.getElementById('product-color-inputs-container');
+            colorContainer.innerHTML = '';
+            if (p.colors && p.colors.length > 0) {
+                p.colors.forEach(c => addProductColorInput(c.name, c.hex));
+            } else {
+                addProductColorInput('Matte Black', '#111111');
+            }
+
+            switchTab('products');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetProductForm() {
+            document.getElementById('product-form-title').innerText = 'Add New Catalog Product';
+            document.getElementById('product-form').action = '/api/admin/products';
+            document.getElementById('product-form').reset();
+            document.getElementById('existing-images-manager').style.display = 'none';
+            document.getElementById('product-submit-btn').innerText = 'Add Product';
+            document.getElementById('product-cancel-btn').style.display = 'none';
+            document.getElementById('product-color-inputs-container').innerHTML = '';
+            addProductColorInput('Matte Black', '#111111');
+        }
+
+        document.getElementById('product-form').addEventListener('submit', function() {
+            const orderInputs = document.querySelectorAll('.img-order-input');
+            const deleteBoxes = document.querySelectorAll('.img-delete-checkbox');
+            
+            let imageDataList = [];
+            let deleteList = [];
+
+            orderInputs.forEach(inp => {
+                const url = inp.dataset.url;
+                const order = parseInt(inp.value) || 99;
+                const isDeleted = Array.from(deleteBoxes).some(b => b.value === url && b.checked);
+                
+                if (isDeleted) {
+                    deleteList.push(url);
+                } else {
+                    imageDataList.push({ url, order });
+                }
+            });
+
+            imageDataList.sort((a, b) => a.order - b.order);
+            document.getElementById('updated-images-order').value = JSON.stringify(imageDataList.map(i => i.url));
+
+            deleteList.forEach(url => {
+                const hiddenDel = document.createElement('input');
+                hiddenDel.type = 'hidden';
+                hiddenDel.name = 'deleteImages';
+                hiddenDel.value = url;
+                this.appendChild(hiddenDel);
+            });
+        });
+
+        function editMaterial(id) {
+            const m = cachedMaterials.find(item => item.id == id);
+            if (!m) return;
+
+            document.getElementById('material-form').action = `/api/admin/materials/update/${m.id}`;
+            document.getElementById('edit-mat-id').value = m.id;
+            document.getElementById('mat-name').value = m.name;
+            document.getElementById('mat-price').value = m.pricePerKg;
+            document.getElementById('mat-desc').value = m.description || '';
+            document.getElementById('material-submit-btn').innerText = 'Save Changes';
+            document.getElementById('material-cancel-btn').style.display = 'block';
+
+            const container = document.getElementById('color-inputs-container');
+            container.innerHTML = '';
+            if (m.colors && m.colors.length > 0) {
+                m.colors.forEach(c => addColorInput(c.name, c.hex));
+            }
+
+            switchTab('materials');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetMaterialForm() {
+            document.getElementById('material-form').action = '/api/admin/materials';
+            document.getElementById('material-form').reset();
+            document.getElementById('material-submit-btn').innerText = 'Save Material';
+            document.getElementById('material-cancel-btn').style.display = 'none';
+            document.getElementById('color-inputs-container').innerHTML = '';
+            addColorInput('Matte Black', '#111111');
+        }
+
+        function addColorInput(name = '', hex = '#f97316') {
+            const container = document.getElementById('color-inputs-container');
+            const div = document.createElement('div');
+            div.style.cssText = "display: flex; gap: 0.5rem; align-items: center; background: white; padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid var(--border);";
+            div.innerHTML = `
+                <input type="color" name="colorHexes" value="${hex}" style="padding: 0; width: 38px; height: 38px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: transparent; overflow: hidden;">
+                <input type="text" name="colorNames" value="${name}" placeholder="Color Name" required style="padding: 0.3rem; border: 1px solid var(--border); border-radius: 4px; width: 110px;">
+                <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: red; cursor: pointer; font-weight: bold;">×</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function addProductColorInput(name = '', hex = '#f97316') {
+            const container = document.getElementById('product-color-inputs-container');
+            const div = document.createElement('div');
+            div.style.cssText = "display: flex; gap: 0.5rem; align-items: center; background: white; padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid var(--border);";
+            div.innerHTML = `
+                <input type="color" name="colorHexes" value="${hex}" style="padding: 0; width: 38px; height: 38px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: transparent; overflow: hidden;">
+                <input type="text" name="colorNames" value="${name}" placeholder="Color Name" required style="padding: 0.3rem; border: 1px solid var(--border); border-radius: 4px; width: 110px;">
+                <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: red; cursor: pointer; font-weight: bold;">×</button>
+            `;
+            container.appendChild(div);
+        }
+
+        async function saveCalculatorSettings(e) {
+            e.preventDefault();
+            const body = {
+                powerCostPerKWh: parseFloat(document.getElementById('calc-power').value),
+                printerWattage: parseFloat(document.getElementById('calc-wattage').value),
+                profitMargin: parseFloat(document.getElementById('calc-margin').value),
+                baseShipping: parseFloat(document.getElementById('calc-shipping').value)
+            };
+            const res = await fetch('/api/admin/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const result = await res.json();
+            alert(result.message || 'Settings updated successfully!');
+            loadAdminData();
+        }
+
+        async function saveInfraSettings(e) {
+            e.preventDefault();
+            const body = {
+                renderUrl: document.getElementById('infra-render-url').value,
+                githubRepo: document.getElementById('infra-github-repo').value,
+                nasIp: document.getElementById('infra-nas-ip').value,
+                mollieEndpoint: document.getElementById('infra-mollie').value
+            };
+            const res = await fetch('/api/admin/infrastructure', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const result = await res.json();
+            alert(result.message || 'Infrastructure settings saved!');
+            loadAdminData();
+        }
+
+        async function deleteProduct(id) {
+            if (!confirm('Are you sure you want to delete this product?')) return;
+            await fetch(`/api/admin/products/${id}`, { method: 'DELETE' });
+            loadAdminData();
+        }
+
+        async function deleteMaterial(id) {
+            if (!confirm('Are you sure you want to delete this material?')) return;
+            await fetch(`/api/admin/materials/${id}`, { method: 'DELETE' });
+            loadAdminData();
+        }
+
         async function loadQueue() {
             try {
                 const res = await fetch('/api/admin/orders');
