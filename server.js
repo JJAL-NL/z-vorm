@@ -80,7 +80,7 @@ function syncChangesToGitHub() {
         return;
     }
 
-    const repo = process.env.GITHUB_REPO; // e.g., github.com/YourUsername/Z-Vorm.git
+    const repo = process.env.GITHUB_REPO; // e.g., github.com/JUAL93/Z-Vorm
     const token = process.env.GH_PAT;
 
     const command = `git config --global user.name "Z-Vorm Admin Bot" && ` +
@@ -88,7 +88,7 @@ function syncChangesToGitHub() {
                     `git add data/settings.json public/uploads/ && ` +
                     `git diff-index --quiet HEAD || (` +
                     `git commit -m "Auto-sync: Admin update [skip ci]" && ` +
-                    `git push https://${token}@${repo} main)`;
+                    `git push https://${token}@${repo}.git main)`;
 
     exec(command, (error, stdout, stderr) => {
         if (error) {
