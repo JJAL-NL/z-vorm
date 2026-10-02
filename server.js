@@ -247,22 +247,24 @@ app.post('/api/admin/products/update/:id', uploadProductImages.array('images', 5
 
             product.customTextEnabled = req.body.customTextEnabled === 'true' || req.body.customTextEnabled === true;
             
-            let existingImages = [];
+            let currentImages = product.images || [];
+            let deleteImages = req.body.deleteImages || [];
+            if (!Array.isArray(deleteImages)) {
+                deleteImages = [deleteImages];
+            }
+
+            let retainedImages = currentImages.filter(imgUrl => !deleteImages.includes(imgUrl));
+
             if (req.body.existingImages) {
-                existingImages = Array.isArray(req.body.existingImages) ? req.body.existingImages : [req.body.existingImages];
-            } else if (req.body.imageOrderJson) {
-                try {
-                    existingImages = JSON.parse(req.body.imageOrderJson);
-                } catch(e) {
-                    existingImages = product.images || [];
-                }
+                let submittedExisting = Array.isArray(req.body.existingImages) ? req.body.existingImages : [req.body.existingImages];
+                retainedImages = retainedImages.filter(imgUrl => submittedExisting.includes(imgUrl));
             }
 
             const newUploadedImages = req.files && req.files.length > 0 
                 ? req.files.map(f => f.path) 
                 : [];
 
-            product.images = [...existingImages, ...newUploadedImages];
+            product.images = [...retainedImages, ...newUploadedImages];
             if (product.images.length === 0) product.images = ['/uploads/default.jpg'];
 
             if (req.body.colorNames && req.body.colorHexes) {
