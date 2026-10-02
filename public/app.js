@@ -37,10 +37,11 @@ function showSection(sectionId) {
         }
     }
 
-    // Update active state in top navigation header
+    // Update active state in top navigation header (null-safe)
     const navButtons = document.querySelectorAll('header nav button');
     navButtons.forEach(btn => {
-        if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(sectionId)) {
+        const onclickAttr = btn.getAttribute('onclick') || '';
+        if (onclickAttr && onclickAttr.includes(sectionId)) {
             btn.style.textDecoration = 'underline';
             btn.style.textUnderlineOffset = '6px';
             btn.style.textDecorationThickness = '2px';
@@ -1027,15 +1028,20 @@ const legalContent = {
     }
 };
 
-function openLegalModal(type) {
+openLegalModal = function(type) {
     const data = legalContent[type];
     if (!data) return;
 
-    document.getElementById('legal-modal-title').innerText = data.title;
-    document.getElementById('legal-modal-body').innerHTML = data.html;
-    document.getElementById('legal-modal').style.display = 'flex';
-}
+    const titleEl = document.getElementById('legal-modal-title');
+    const bodyEl = document.getElementById('legal-modal-body');
+    const modalEl = document.getElementById('legal-modal');
+
+    if (titleEl) titleEl.innerText = data.title;
+    if (bodyEl) bodyEl.innerHTML = data.html;
+    if (modalEl) modalEl.style.display = 'flex';
+};
 
 function closeLegalModal() {
-    document.getElementById('legal-modal').style.display = 'none';
+    const modalEl = document.getElementById('legal-modal');
+    if (modalEl) modalEl.style.display = 'none';
 }
