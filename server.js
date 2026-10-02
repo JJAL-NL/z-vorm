@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -5,29 +6,27 @@ const multer = require('multer');
 const basicAuth = require('express-basic-auth');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
-const { exec } = require('child_process');
-const { Resend } = require('resend'); // Prepared for Option A Email Delivery
+const { Resend } = require('resend');
+const { MongoClient } = require('mongodb');
 
 const app = express();
-app.set('trust proxy', 1); // Trust Render's load balancer proxy headers
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Secure HTTP headers & HSTS (Strict Transport Security)
 app.use(
     helmet({
-        contentSecurityPolicy: false, // Keep relaxed for standard web assets
+        contentSecurityPolicy: false,
         hsts: {
-            maxAge: 31536000, // 1 year HSTS policy
+            maxAge: 31536000,
             includeSubDomains: true,
             preload: true
         }
     })
 );
 
-// Force HTTPS redirection in production
 app.use((req, res, next) => {
     if (req.headers['x-forwarded-proto'] !== 'https' && process.env.NODE_ENV === 'production') {
         return res.redirect(`https://${req.headers.host}${req.url}`);
@@ -35,16 +34,14 @@ app.use((req, res, next) => {
     next();
 });
 
-// Brute-force protection: generous limit for normal admin use, plus manual reset support
 const adminLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // 100 requests so normal workflow never locks you out
+    windowMs: 15 * 60 * 1000,
+    max: 100,
     message: 'Too many requests from this IP, please try again after 15 minutes.',
     standardHeaders: true,
     legacyHeaders: false,
 });
 
-// Manual rate limit reset helper route (visit /z-vorm-manage-reset to clear block instantly)
 app.get('/z-vorm-manage-reset', (req, res) => {
     adminLimiter.resetKey(req.ip);
     res.send(`
@@ -56,7 +53,6 @@ app.get('/z-vorm-manage-reset', (req, res) => {
     `);
 });
 
-// Apply rate limiter and basic authentication to your obscured admin route and API endpoints
 app.use(['/z-vorm-manage-7842.html', '/api/admin'], adminLimiter, basicAuth({
     users: { 
         [process.env.ADMIN_USER || 'admin']: process.env.ADMIN_PASS || 'zvormsecure2026' 
@@ -65,81 +61,10 @@ app.use(['/z-vorm-manage-7842.html', '/api/admin'], adminLimiter, basicAuth({
     realm: 'Z-Vorm Admin Portal'
 }));
 
-// Serve static files after security checks
 app.use(express.static(path.join(__dirname, 'public')));
 
 const uploadDir = path.join(__dirname, 'public/uploads');
-const dataDir = path.join(__dirname, 'data');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-
-const settingsPath = path.join(dataDir, 'settings.json');
-
-// Background function to commit and push changes back to GitHub for free persistence on Render
-function syncChangesToGitHub() {
-    if (!process.env.GH_PAT || !process.env.GITHUB_REPO) {
-        console.log('GitHub auto-sync credentials not configured. Skipping sync.');
-        return;
-    }
-
-    let rawRepo = process.env.GITHUB_REPO.trim();
-    rawRepo = rawRepo.replace(/^https?:\/\//i, '');
-    
-    while (rawRepo.endsWith('.git') || rawRepo.endsWith('/')) {
-        rawRepo = rawRepo.replace(/\.git$/, '').replace(/\/+$/, '');
-    }
-
-    const cleanRepo = rawRepo;
-    const token = process.env.GH_PAT;
-
-    const command = `rm -f .git/index.lock && ` +
-                    `git config --global user.name "Z-Vorm Admin Bot" && ` +
-                    `git config --global user.email "admin@z-vorm.nl" && ` +
-                    `git add data/settings.json public/uploads/ && ` +
-                    `git diff-index --quiet HEAD || (` +
-                    `git commit -m "Auto-sync: Admin update [skip ci]" && ` +
-                    `git push https://${token}@${cleanRepo}.git main)`;
-
-    exec(command, (error, stdout, stderr) => {
-        if (error) {
-            console.error(`Git sync error: ${error.message}`);
-            return;
-        }
-        console.log(`Successfully synced admin changes to GitHub: ${stdout.trim()}`);
-    });
-}
-
-// Wrapper to save settings locally and trigger GitHub auto-sync
-function saveSettings(data) {
-    fs.writeFileSync(settingsPath, JSON.stringify(data, null, 2));
-    syncChangesToGitHub();
-}
-
-if (!fs.existsSync(settingsPath)) {
-    const defaultData = {
-        calculator: {
-            powerCostPerKWh: 0.20,
-            printerWattage: 150,
-            profitMargin: 0.30,
-            baseShipping: 7.00
-        },
-        infrastructure: {
-            renderUrl: "https://z-vorm.onrender.com",
-            githubRepo: "JUAL93/Z-Vorm",
-            nasIp: "192.168.1.150",
-            mollieEndpoint: "https://api.mollie.com"
-        },
-        materials: [
-            { id: "pla", name: "PLA / PLA-PHA", pricePerKg: 20.00, description: "General prototypes, visual models, and eco-friendly tough prints.", colors: [{name: "Matte Black", hex: "#111111"}, {name: "Pure White", hex: "#f8fafc"}, {name: "Z-Vorm Orange", hex: "#f97316"}] },
-            { id: "petg", name: "PETG & ColorFabb", pricePerKg: 28.00, description: "Durable mechanical parts with chemical and UV resistance.", colors: [{name: "Carbon Black", hex: "#1e293b"}, {name: "Transparent", hex: "#94a3b8"}] }
-        ],
-        products: [
-            { id: 1, name: "VeloDock Wall Mount", price: 34.99, description: "Premium bicycle wall mount system.", category: "Shop", sizes: "Standard, XL", leadTimeBadge: "In Stock - Dispatched in 48h", customTextEnabled: false, images: ["/uploads/default.jpg"], colors: [{name: "Matte Black", hex: "#111111"}] },
-            { id: 2, name: "Hexagon Medal Hanger", price: 24.99, description: "Modular medal display system.", category: "Shop", sizes: "Standard", leadTimeBadge: "Made-to-Order (3-5 days)", customTextEnabled: true, images: ["/uploads/default.jpg"], colors: [{name: "Z-Vorm Orange", hex: "#f97316"}] }
-        ]
-    };
-    fs.writeFileSync(settingsPath, JSON.stringify(defaultData, null, 2));
-}
 
 const productStorage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, uploadDir),
@@ -148,17 +73,80 @@ const productStorage = multer.diskStorage({
 const uploadProductImages = multer({ storage: productStorage });
 const contactUpload = multer({ dest: path.join(__dirname, 'uploads/') });
 
-function getSettings() {
-    const raw = fs.readFileSync(settingsPath);
-    return JSON.parse(raw);
+// ----------------------------------------------------
+// MongoDB Atlas Database Setup & Auto-Migration
+// ----------------------------------------------------
+const mongoUri = process.env.MONGODB_URI;
+let settingsCollection;
+let ordersCollection;
+
+async function initDB() {
+    if (!mongoUri) {
+        console.error("CRITICAL: MONGODB_URI is not set in environment variables.");
+        process.exit(1);
+    }
+
+    const client = new MongoClient(mongoUri);
+    await client.connect();
+    console.log("Connected successfully to MongoDB Atlas!");
+    
+    const db = client.db('zvorm_db');
+    settingsCollection = db.collection('settings');
+    ordersCollection = db.collection('orders');
+    
+    const existing = await settingsCollection.findOne({ _id: 'site_settings' });
+    
+    // Automatic Migration: If Mongo is empty, pull existing data from local JSON
+    if (!existing) {
+        console.log("No settings found in MongoDB. Initializing automatic migration...");
+        let defaultData;
+        const localSettingsPath = path.join(__dirname, 'data', 'settings.json');
+        
+        if (fs.existsSync(localSettingsPath)) {
+            console.log("Migrating existing local settings.json to MongoDB...");
+            defaultData = JSON.parse(fs.readFileSync(localSettingsPath));
+        } else {
+            console.log("Creating default catalog...");
+            defaultData = {
+                calculator: { powerCostPerKWh: 0.20, printerWattage: 150, profitMargin: 0.30, baseShipping: 7.00 },
+                infrastructure: { renderUrl: "https://z-vorm.onrender.com", githubRepo: "JUAL93/Z-Vorm", nasIp: "192.168.1.150", mollieEndpoint: "https://api.mollie.com" },
+                materials: [
+                    { id: "pla", name: "PLA / PLA-PHA", pricePerKg: 20.00, description: "General prototypes.", colors: [{name: "Matte Black", hex: "#111111"}, {name: "Z-Vorm Orange", hex: "#f97316"}] }
+                ],
+                products: [
+                    { id: 1, name: "VeloDock Wall Mount", price: 34.99, description: "Premium bicycle wall mount system.", category: "Shop", sizes: "Standard, XL", isVisible: true, customTextEnabled: false, images: ["/uploads/default.jpg"], colors: [{name: "Matte Black", hex: "#111111"}] }
+                ]
+            };
+        }
+        await settingsCollection.insertOne({ _id: 'site_settings', ...defaultData });
+        console.log("Migration complete!");
+    }
 }
 
-app.get('/api/admin/data', (req, res) => {
-    res.json(getSettings());
+async function getSettings() {
+    const data = await settingsCollection.findOne({ _id: 'site_settings' });
+    return data;
+}
+
+async function saveSettings(data) {
+    const { _id, ...updateData } = data;
+    await settingsCollection.updateOne(
+        { _id: 'site_settings' },
+        { $set: updateData },
+        { upsert: true }
+    );
+}
+
+// ----------------------------------------------------
+// Express API Routes (Async MongoDB Queries)
+// ----------------------------------------------------
+
+app.get('/api/admin/data', async (req, res) => {
+    res.json(await getSettings());
 });
 
-app.get('/api/settings', (req, res) => {
-    const settings = getSettings();
+app.get('/api/settings', async (req, res) => {
+    const settings = await getSettings();
     const materials = settings.materials || [];
     const basePrice = materials.length > 0 ? materials[0].pricePerKg : 20.00;
 
@@ -170,31 +158,32 @@ app.get('/api/settings', (req, res) => {
         };
     });
 
+    // Only expose products that are visible (not in draft status) to the public frontend
+    const publicProducts = (settings.products || []).filter(p => p.isVisible !== false);
+
     res.json({
         calculator: settings.calculator,
         materials: materialsWithDiff,
-        products: settings.products
+        products: publicProducts
     });
 });
 
-app.post('/api/admin/settings', (req, res) => {
-    const data = getSettings();
+app.post('/api/admin/settings', async (req, res) => {
+    const data = await getSettings();
     data.calculator = req.body;
-    saveSettings(data);
+    await saveSettings(data);
     res.json({ success: true, message: 'Calculator settings updated successfully' });
 });
 
-// Save Infrastructure Settings Endpoint
-app.post('/api/admin/infrastructure', (req, res) => {
-    const data = getSettings();
+app.post('/api/admin/infrastructure', async (req, res) => {
+    const data = await getSettings();
     data.infrastructure = req.body;
-    saveSettings(data);
+    await saveSettings(data);
     res.json({ success: true, message: 'Infrastructure settings updated successfully' });
 });
 
-// Add Product with Multiple Images & Order
-app.post('/api/admin/products', uploadProductImages.array('images', 5), (req, res) => {
-    const data = getSettings();
+app.post('/api/admin/products', uploadProductImages.array('images', 5), async (req, res) => {
+    const data = await getSettings();
     const imagePaths = req.files && req.files.length > 0 
         ? req.files.map(f => `/uploads/${f.filename}`) 
         : ['/uploads/default.jpg'];
@@ -214,27 +203,33 @@ app.post('/api/admin/products', uploadProductImages.array('images', 5), (req, re
         category: req.body.category || 'Shop',
         sizes: req.body.sizes ? req.body.sizes.trim() : '',
         leadTimeBadge: req.body.leadTimeBadge ? req.body.leadTimeBadge.trim() : '',
+        isVisible: req.body.isVisible !== 'false' && req.body.isVisible !== false,
         customTextEnabled: req.body.customTextEnabled === 'true' || req.body.customTextEnabled === true,
         images: imagePaths,
         colors: colors.length > 0 ? colors : [{ name: "Default", hex: "#f97316" }]
     };
     
     data.products.push(newProduct);
-    saveSettings(data);
+    await saveSettings(data);
     res.redirect('/z-vorm-manage-7842.html');
 });
 
-// Update Product with Image Reordering, Deletions, and New Uploads
-app.post('/api/admin/products/update/:id', uploadProductImages.array('images', 5), (req, res) => {
-    const data = getSettings();
+app.post('/api/admin/products/update/:id', uploadProductImages.array('images', 5), async (req, res) => {
+    const data = await getSettings();
     const product = data.products.find(p => p.id == req.params.id);
 
     if (product) {
         product.name = req.body.name || product.name;
         product.price = parseFloat(req.body.price) || product.price;
         product.description = req.body.description || product.description || '';
+        product.category = req.body.category || product.category || 'Shop';
         product.sizes = req.body.sizes !== undefined ? req.body.sizes.trim() : (product.sizes || '');
         product.leadTimeBadge = req.body.leadTimeBadge !== undefined ? req.body.leadTimeBadge.trim() : (product.leadTimeBadge || '');
+        
+        if (req.body.isVisible !== undefined) {
+            product.isVisible = req.body.isVisible !== 'false' && req.body.isVisible !== false;
+        }
+
         product.customTextEnabled = req.body.customTextEnabled === 'true' || req.body.customTextEnabled === true;
         
         let existingImages = [];
@@ -261,21 +256,20 @@ app.post('/api/admin/products/update/:id', uploadProductImages.array('images', 5
             product.colors = names.map((n, i) => ({ name: n, hex: hexes[i] || '#f97316' }));
         }
 
-        saveSettings(data);
+        await saveSettings(data);
     }
     res.redirect('/z-vorm-manage-7842.html');
 });
 
-app.delete('/api/admin/products/:id', (req, res) => {
-    const data = getSettings();
+app.delete('/api/admin/products/:id', async (req, res) => {
+    const data = await getSettings();
     data.products = data.products.filter(p => p.id != req.params.id);
-    saveSettings(data);
+    await saveSettings(data);
     res.json({ success: true });
 });
 
-// Add Material
-app.post('/api/admin/materials', (req, res) => {
-    const data = getSettings();
+app.post('/api/admin/materials', async (req, res) => {
+    const data = await getSettings();
     const { name, pricePerKg, description, colorNames, colorHexes } = req.body;
     
     if (!data.materials) data.materials = [];
@@ -295,13 +289,12 @@ app.post('/api/admin/materials', (req, res) => {
         colors: colors.length > 0 ? colors : [{name: "Default", hex: "#f97316"}]
     });
 
-    saveSettings(data);
+    await saveSettings(data);
     res.redirect('/z-vorm-manage-7842.html');
 });
 
-// Update Material
-app.post('/api/admin/materials/update/:id', (req, res) => {
-    const data = getSettings();
+app.post('/api/admin/materials/update/:id', async (req, res) => {
+    const data = await getSettings();
     const material = data.materials.find(m => m.id == req.params.id);
 
     if (material) {
@@ -315,22 +308,108 @@ app.post('/api/admin/materials/update/:id', (req, res) => {
             material.colors = names.map((n, i) => ({ name: n, hex: hexes[i] || '#f97316' }));
         }
 
-        saveSettings(data);
+        await saveSettings(data);
     }
     res.redirect('/z-vorm-manage-7842.html');
 });
 
-app.delete('/api/admin/materials/:id', (req, res) => {
-    const data = getSettings();
+app.delete('/api/admin/materials/:id', async (req, res) => {
+    const data = await getSettings();
     data.materials = data.materials.filter(m => m.id != req.params.id);
-    saveSettings(data);
+    await saveSettings(data);
     res.json({ success: true });
 });
 
-// Contact form submission with Resend Email Integration (Option A)
+// ----------------------------------------------------
+// Order Management, Print Queue & Analytics Routes
+// ----------------------------------------------------
+
+app.get('/api/admin/orders', async (req, res) => {
+    if (!ordersCollection) return res.json([]);
+    const orders = await ordersCollection.find({}).sort({ date: -1 }).toArray();
+    res.json(orders);
+});
+
+app.post('/api/admin/orders/update-status/:id', async (req, res) => {
+    const { status, assignedPrinter, totalPrice, estimatedWeightKg } = req.body;
+    const updateFields = {};
+    if (status !== undefined) updateFields.status = status;
+    if (assignedPrinter !== undefined) updateFields.assignedPrinter = assignedPrinter;
+    if (totalPrice !== undefined) updateFields.totalPrice = parseFloat(totalPrice) || 0;
+    if (estimatedWeightKg !== undefined) updateFields.estimatedWeightKg = parseFloat(estimatedWeightKg) || 0;
+
+    await ordersCollection.updateOne(
+        { id: req.params.id },
+        { $set: updateFields }
+    );
+    res.json({ success: true });
+});
+
+app.delete('/api/admin/orders/:id', async (req, res) => {
+    await ordersCollection.deleteOne({ id: req.params.id });
+    res.json({ success: true });
+});
+
+app.get('/api/admin/analytics', async (req, res) => {
+    if (!ordersCollection) {
+        return res.json({ totalRevenue: "0.00", completedOrders: 0, filamentUsed: "0.00", activeQuotes: 0 });
+    }
+
+    const orders = await ordersCollection.find({}).toArray();
+    
+    let totalRevenue = 0;
+    let completedOrders = 0;
+    let filamentUsed = 0;
+    let activeQuotes = 0;
+    
+    orders.forEach(order => {
+        if (order.status === 'Completed' || order.status === 'Shipped') {
+            completedOrders++;
+            totalRevenue += parseFloat(order.totalPrice || 0);
+            filamentUsed += parseFloat(order.estimatedWeightKg || 0);
+        } else {
+            activeQuotes++;
+        }
+    });
+    
+    res.json({ 
+        totalRevenue: totalRevenue.toFixed(2), 
+        completedOrders, 
+        filamentUsed: filamentUsed.toFixed(2), 
+        activeQuotes 
+    });
+});
+
+// ----------------------------------------------------
+// Contact & Inquiry Submission Handler
+// ----------------------------------------------------
+
 app.post('/api/contact', contactUpload.single('attachment'), async (req, res) => {
     const { name, email, subject, message, quantity } = req.body;
     console.log(`New Inquiry from ${name} (${email}): ${subject} - ${message}`);
+
+    // Persist inquiry in MongoDB to feed Print Queue and Analytics
+    if (ordersCollection) {
+        try {
+            const newOrder = {
+                id: 'ORD_' + Date.now(),
+                date: new Date().toISOString(),
+                customerName: name || 'Anonymous',
+                email: email || 'N/A',
+                subject: subject || '3D Print Quote',
+                message: message || '',
+                quantity: parseInt(quantity, 10) || 1,
+                status: 'Pending',
+                assignedPrinter: 'Unassigned',
+                totalPrice: 0,
+                estimatedWeightKg: 0
+            };
+            await ordersCollection.insertOne(newOrder);
+            console.log('Order successfully recorded to MongoDB orders collection.');
+        } catch (dbErr) {
+            console.error('Failed to save order to MongoDB:', dbErr);
+        }
+    }
 
     if (process.env.RESEND_API_KEY) {
         try {
@@ -352,6 +431,14 @@ app.post('/api/contact', contactUpload.single('attachment'), async (req, res) =>
     res.send(`<script>alert('Project submitted successfully! We will get back to you shortly.'); window.location.href='/';</script>`);
 });
 
-app.listen(PORT, () => {
-    console.log(`Z-Vorm server running on http://localhost:${PORT}`);
+// ----------------------------------------------------
+// Server Startup
+// ----------------------------------------------------
+
+initDB().then(() => {
+    app.listen(PORT, () => {
+        console.log(`Z-Vorm server running on http://localhost:${PORT}`);
+    });
+}).catch(err => {
+    console.error("Failed to connect to database on startup:", err);
 });

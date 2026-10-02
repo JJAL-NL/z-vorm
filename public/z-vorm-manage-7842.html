@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Z-Vorm | Master Command Center</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
     <style>
         :root {
             --primary: #f97316;
@@ -54,10 +53,19 @@
         .btn-secondary { background: #3b82f6; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.8rem; }
         .btn-secondary:hover { background: #2563eb; }
 
-        .infra-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; }
-        .infra-card { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.8rem; }
-        .status-badge { display: inline-block; padding: 0.25rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; width: fit-content; }
-        .status-online { background: #dcfce7; color: #166534; }
+        /* Kanban Board Styles */
+        .kanban-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+        .kanban-col { background: #f1f5f9; padding: 1rem; border-radius: 8px; border: 1px solid var(--border); }
+        .kanban-col h3 { font-size: 0.9rem; font-weight: 700; text-transform: uppercase; margin-bottom: 1rem; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; }
+        .kanban-card { background: white; padding: 1rem; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .kanban-card h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .kanban-card p { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+        
+        /* Analytics Dashboard Styles */
+        .analytics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+        .kpi-card { background: white; padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border); text-align: center; }
+        .kpi-card h4 { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 0.5rem; }
+        .kpi-card .value { font-size: 1.8rem; font-weight: 800; color: var(--text-main); }
     </style>
 </head>
 <body>
@@ -76,8 +84,9 @@
             <button class="tab-btn active" onclick="switchTab('products', this)">Catalog Products</button>
             <button class="tab-btn" onclick="switchTab('materials', this)">Materials & Pricing</button>
             <button class="tab-btn" onclick="switchTab('calculator', this)">Calculator</button>
-            <button class="tab-btn" onclick="switchTab('orders', this)">Orders & Inquiries</button>
-            <button class="tab-btn" onclick="switchTab('infra', this)">Infrastructure & Status</button>
+            <button class="tab-btn" onclick="switchTab('queue', this)">Print Queue</button>
+            <button class="tab-btn" onclick="switchTab('analytics', this)">Analytics</button>
+            <button class="tab-btn" onclick="switchTab('infra', this)">Infrastructure</button>
         </div>
 
         <!-- Products Panel -->
@@ -85,6 +94,7 @@
             <h2 id="product-form-title">Add New Catalog Product</h2>
             <form id="product-form" action="/api/admin/products" method="POST" enctype="multipart/form-data">
                 <input type="hidden" id="edit-prod-id" name="id" value="">
+                
                 <div class="form-grid">
                     <div>
                         <label>Product Name</label>
@@ -95,10 +105,12 @@
                         <input type="number" step="0.01" id="prod-price" name="price" required placeholder="34.99">
                     </div>
                 </div>
+                
                 <div>
                     <label>Description</label>
                     <textarea id="prod-desc" name="description" rows="3" placeholder="Detailed product specifications..."></textarea>
                 </div>
+                
                 <div class="form-grid">
                     <div>
                         <label>Sizes (comma separated)</label>
@@ -110,6 +122,23 @@
                     </div>
                 </div>
 
+                <div class="form-grid">
+                    <div>
+                        <label>Custom Engraving Enabled</label>
+                        <select id="prod-custom" name="customTextEnabled">
+                            <option value="false">Disabled</option>
+                            <option value="true">Enabled</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Product Visibility Status</label>
+                        <select id="prod-visible" name="isVisible">
+                            <option value="true">🟢 Active (Live on Store)</option>
+                            <option value="false">⚪ Draft (Hidden from Customers)</option>
+                        </select>
+                    </div>
+                </div>
+
                 <!-- Existing Images Manager (for editing) -->
                 <div id="existing-images-manager" style="display:none; background: #f8fafc; border: 1px solid var(--border); padding: 1rem; border-radius: 8px;">
                     <label style="margin-bottom: 0.8rem;">Manage Existing Images (Reorder & Delete)</label>
@@ -117,18 +146,9 @@
                     <input type="hidden" id="updated-images-order" name="imageOrderJson">
                 </div>
 
-                <div class="form-grid">
-                    <div>
-                        <label>Add New Images</label>
-                        <input type="file" name="images" multiple accept="image/*">
-                    </div>
-                    <div>
-                        <label>Custom Engraving / Text Enabled</label>
-                        <select id="prod-custom" name="customTextEnabled">
-                            <option value="false">Disabled</option>
-                            <option value="true">Enabled</option>
-                        </select>
-                    </div>
+                <div>
+                    <label>Add New Images</label>
+                    <input type="file" name="images" multiple accept="image/*">
                 </div>
 
                 <div>
@@ -209,16 +229,59 @@
             </form>
         </div>
 
-        <!-- Orders & Inquiries Panel -->
-        <div id="panel-orders" class="panel">
-            <h2>Recent Orders & Project Inquiries</h2>
-            <div id="admin-orders-list" class="item-list"></div>
+        <!-- Print Queue Panel -->
+        <div id="panel-queue" class="panel">
+            <h2>Active Print Queue & Orders</h2>
+            <div class="kanban-board">
+                <!-- Pending Column -->
+                <div class="kanban-col">
+                    <h3 style="color: #64748b;">Pending / Slicing</h3>
+                    <div id="queue-pending"></div>
+                </div>
+                <!-- Printing Column -->
+                <div class="kanban-col">
+                    <h3 style="color: #f97316;">Currently Printing</h3>
+                    <div id="queue-printing"></div>
+                </div>
+                <!-- Completed Column -->
+                <div class="kanban-col">
+                    <h3 style="color: #16a34a;">Completed / Shipped</h3>
+                    <div id="queue-completed"></div>
+                </div>
+            </div>
         </div>
 
-        <!-- Infrastructure & Status Panel -->
+        <!-- Analytics Panel -->
+        <div id="panel-analytics" class="panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2>Platform Analytics</h2>
+                <button onclick="loadAnalytics()" class="btn-secondary" style="font-size: 0.75rem;">Refresh Data</button>
+            </div>
+            
+            <div class="analytics-grid">
+                <div class="kpi-card">
+                    <h4>Total Revenue</h4>
+                    <div class="value" id="stat-revenue">€0.00</div>
+                </div>
+                <div class="kpi-card">
+                    <h4>Completed Orders</h4>
+                    <div class="value" id="stat-completed">0</div>
+                </div>
+                <div class="kpi-card">
+                    <h4>Filament Used</h4>
+                    <div class="value" id="stat-filament">0.00 kg</div>
+                </div>
+                <div class="kpi-card" style="border-color: var(--primary);">
+                    <h4 style="color: var(--primary);">Active Quotes</h4>
+                    <div class="value" id="stat-active" style="color: var(--primary);">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Infrastructure Panel -->
         <div id="panel-infra" class="panel">
             <h2>Infrastructure & Service Endpoints</h2>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Configure your live service endpoints and API targets dynamically without touching source code.</p>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Configure your live service endpoints and API targets dynamically.</p>
             
             <form id="infra-config-form" onsubmit="saveInfraSettings(event)">
                 <div class="form-grid">
@@ -255,6 +318,9 @@
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('panel-' + tabId).classList.add('active');
             if (btn) btn.classList.add('active');
+
+            if (tabId === 'queue') loadQueue();
+            if (tabId === 'analytics') loadAnalytics();
         }
 
         async function loadAdminData() {
@@ -282,12 +348,14 @@
                 const prodList = document.getElementById('admin-products-list');
                 prodList.innerHTML = cachedProducts.map(p => {
                     const thumb = (p.images && p.images.length > 0) ? p.images[0] : (p.image || '/uploads/default.jpg');
+                    const visibilityBadge = p.isVisible === false ? '<span style="background:#e2e8f0; font-size:0.7rem; padding:2px 6px; border-radius:4px; margin-left:8px;">Draft</span>' : '<span style="background:#dcfce7; color:#166534; font-size:0.7rem; padding:2px 6px; border-radius:4px; margin-left:8px;">Live</span>';
+                    
                     return `
                         <div class="item-card">
                             <div style="display: flex; gap: 1rem; align-items: center;">
                                 <img src="${thumb}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border);">
                                 <div>
-                                    <h4>${p.name}</h4>
+                                    <h4 style="display:flex; align-items:center;">${p.name} ${visibilityBadge}</h4>
                                     <p>€${p.price.toFixed(2)} | ${p.images ? p.images.length : 1} images</p>
                                 </div>
                             </div>
@@ -299,7 +367,7 @@
                     `;
                 }).join('');
 
-                // Render Materials List with properly formatted Color swatches
+                // Render Materials List
                 const matList = document.getElementById('admin-materials-list');
                 matList.innerHTML = cachedMaterials.map(m => `
                     <div class="item-card">
@@ -334,6 +402,7 @@
             document.getElementById('prod-sizes').value = p.sizes || '';
             document.getElementById('prod-badge').value = p.leadTimeBadge || '';
             document.getElementById('prod-custom').value = p.customTextEnabled ? 'true' : 'false';
+            document.getElementById('prod-visible').value = p.isVisible === false ? 'false' : 'true';
             document.getElementById('product-submit-btn').innerText = 'Save Changes';
             document.getElementById('product-cancel-btn').style.display = 'block';
 
@@ -429,24 +498,26 @@
             addColorInput('Matte Black', '#111111');
         }
 
+        // Updated CSS fix applied to color picker inputs
         function addColorInput(name = '', hex = '#f97316') {
             const container = document.getElementById('color-inputs-container');
             const div = document.createElement('div');
             div.style.cssText = "display: flex; gap: 0.5rem; align-items: center; background: white; padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid var(--border);";
             div.innerHTML = `
-                <input type="color" name="colorHexes" value="${hex}" style="width: 30px; height: 30px; border: none; cursor: pointer;">
+                <input type="color" name="colorHexes" value="${hex}" style="appearance: none; -webkit-appearance: none; padding: 0; width: 38px; height: 38px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: transparent; overflow: hidden;">
                 <input type="text" name="colorNames" value="${name}" placeholder="Color Name" required style="padding: 0.3rem; border: 1px solid var(--border); border-radius: 4px; width: 110px;">
                 <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: red; cursor: pointer; font-weight: bold;">×</button>
             `;
             container.appendChild(div);
         }
 
+        // Updated CSS fix applied to color picker inputs
         function addProductColorInput(name = '', hex = '#f97316') {
             const container = document.getElementById('product-color-inputs-container');
             const div = document.createElement('div');
             div.style.cssText = "display: flex; gap: 0.5rem; align-items: center; background: white; padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid var(--border);";
             div.innerHTML = `
-                <input type="color" name="colorHexes" value="${hex}" style="width: 30px; height: 30px; border: none; cursor: pointer;">
+                <input type="color" name="colorHexes" value="${hex}" style="appearance: none; -webkit-appearance: none; padding: 0; width: 38px; height: 38px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: transparent; overflow: hidden;">
                 <input type="text" name="colorNames" value="${name}" placeholder="Color Name" required style="padding: 0.3rem; border: 1px solid var(--border); border-radius: 4px; width: 110px;">
                 <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: red; cursor: pointer; font-weight: bold;">×</button>
             `;
@@ -499,6 +570,88 @@
             if (!confirm('Are you sure you want to delete this material?')) return;
             await fetch(`/api/admin/materials/${id}`, { method: 'DELETE' });
             loadAdminData();
+        }
+
+        // Print Queue Logic
+        async function loadQueue() {
+            try {
+                const res = await fetch('/api/admin/orders');
+                const orders = await res.json();
+                
+                document.getElementById('queue-pending').innerHTML = '';
+                document.getElementById('queue-printing').innerHTML = '';
+                document.getElementById('queue-completed').innerHTML = '';
+
+                orders.forEach(order => {
+                    const card = document.createElement('div');
+                    card.className = 'kanban-card';
+                    card.innerHTML = `
+                        <h4>${order.subject}</h4>
+                        <p><strong>Customer:</strong> ${order.customerName}</p>
+                        <p><strong>Qty:</strong> ${order.quantity}</p>
+                        ${order.status === 'Completed' || order.status === 'Shipped' 
+                            ? `<p><strong>Revenue:</strong> €${order.totalPrice}</p><p><strong>Filament:</strong>${order.estimatedWeightKg}kg</p>` 
+                            : ''}
+                        
+                        <div style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.3rem;">
+                            <label style="font-size: 0.7rem; font-weight: bold; margin-bottom: 0;">Update Status:</label>
+                            <select onchange="updateOrderStatus('${order.id}', this.value)" style="padding: 0.2rem; font-size: 0.8rem; height: auto;">
+                                <option value="Pending" ${order.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                                <option value="Printing" ${order.status === 'Printing' ? 'selected' : ''}>Printing</option>
+                                <option value="Completed" ${order.status === 'Completed' ? 'selected' : ''}>Completed</option>
+                            </select>
+                            
+                            ${order.status !== 'Completed' ? `
+                                <input type="number" step="0.01" id="price_${order.id}" placeholder="Final Price (€)" value="${order.totalPrice || ''}" style="padding: 0.3rem; font-size: 0.8rem;">
+                                <input type="number" step="0.01" id="weight_${order.id}" placeholder="Est. Weight (kg)" value="${order.estimatedWeightKg || ''}" style="padding: 0.3rem; font-size: 0.8rem;">
+                                <button onclick="saveOrderMetrics('${order.id}')" class="btn-secondary" style="padding: 0.25rem; font-size: 0.7rem; width: 100%;">Save Metrics</button>
+                            ` : ''}
+                        </div>
+                    `;
+
+                    if (order.status === 'Pending') document.getElementById('queue-pending').appendChild(card);
+                    else if (order.status === 'Printing') document.getElementById('queue-printing').appendChild(card);
+                    else document.getElementById('queue-completed').appendChild(card);
+                });
+            } catch (err) {
+                console.error("Failed to load queue:", err);
+            }
+        }
+
+        async function updateOrderStatus(id, newStatus) {
+            await fetch(`/api/admin/orders/update-status/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
+            loadQueue();
+        }
+
+        async function saveOrderMetrics(id) {
+            const price = document.getElementById(`price_${id}`).value;
+            const weight = document.getElementById(`weight_${id}`).value;
+            await fetch(`/api/admin/orders/update-status/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ totalPrice: price, estimatedWeightKg: weight })
+            });
+            alert("Order metrics saved!");
+            loadQueue();
+        }
+
+        // Analytics Logic
+        async function loadAnalytics() {
+            try {
+                const res = await fetch('/api/admin/analytics');
+                const data = await res.json();
+                
+                document.getElementById('stat-revenue').innerText = `€${data.totalRevenue}`;
+                document.getElementById('stat-completed').innerText = data.completedOrders;
+                document.getElementById('stat-filament').innerText = `${data.filamentUsed} kg`;
+                document.getElementById('stat-active').innerText = data.activeQuotes;
+            } catch (err) {
+                console.error("Failed to load analytics:", err);
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
