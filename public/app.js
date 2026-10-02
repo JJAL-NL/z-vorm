@@ -95,7 +95,7 @@ window.addEventListener('DOMContentLoaded', () => {
     fetchShopProducts();
     initCartUI();
     initMinimalArrows();
-    showSection('home'); // Initialize navigation states on load
+    showSection('home');
 });
 
 // Minimalist, borderless, transparent navigation arrows visible on any background
@@ -201,7 +201,6 @@ function renderShopProducts(products) {
             </div>
         `;
 
-        // Explicitly attach click listener to trigger product modal popup[cite: 8]
         card.addEventListener('click', () => {
             openProductModal(p);
         });
@@ -272,32 +271,13 @@ function openProductModal(product) {
 function updateModalGallery() {
     const images = (activeProduct.images && activeProduct.images.length > 0) ? activeProduct.images : [activeProduct.image || '/uploads/default.jpg'];
     const mainImg = document.getElementById('modal-main-img');
-    const arrows = document.getElementById('modal-carousel-arrows');
     const thumbnailsEl = document.getElementById('modal-thumbnails');
 
     mainImg.src = images[currentImageIndex];
 
-    if (images.length > 1) {
-        arrows.style.display = 'flex';
-    } else {
-        arrows.style.display = 'none';
-    }
-
     thumbnailsEl.innerHTML = images.map((img, idx) => `
         <img src="${img}" onclick="currentImageIndex = ${idx}; updateModalGallery();" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 2px solid ${idx === currentImageIndex ? 'var(--primary)' : 'var(--border)'}; cursor: pointer;">
     `).join('');
-}
-
-function nextModalImage() {
-    const images = (activeProduct.images && activeProduct.images.length > 0) ? activeProduct.images : [activeProduct.image || '/uploads/default.jpg'];
-    currentImageIndex = (currentImageIndex + 1) % images.length;
-    updateModalGallery();
-}
-
-function prevModalImage() {
-    const images = (activeProduct.images && activeProduct.images.length > 0) ? activeProduct.images : [activeProduct.image || '/uploads/default.jpg'];
-    currentImageIndex = (currentImageIndex - 1 + images.length) % images.length;
-    updateModalGallery();
 }
 
 function selectModalColor(colorName, el) {
@@ -549,7 +529,6 @@ function submitOrderDirect(e) {
     closeCheckoutModal();
 }
 
-// On-Demand Fetching & Parsing for Sample STL
 async function loadSampleStlFile() {
     try {
         const response = await fetch('/sample.stl');
@@ -595,7 +574,7 @@ async function loadSampleStlFile() {
         calculateModelMetrics(geometry, size);
     } catch (err) {
         console.error('Error loading sample STL:', err);
-        alert('Could not load sample model. Please make sure sample.stl is placed in your public directory.');
+        alert('Could not load sample model.');
     }
 }
 
@@ -894,40 +873,26 @@ function resizeViewer() {
 }
 window.addEventListener('resize', resizeViewer);
 
-// Legal & Logistics Content Dictionary (English)
 const legalContent = {
     shipping: {
         title: "Shipping & Delivery Times",
         html: `
             <h4 style="color: var(--text-main);">Delivery Times</h4>
-            <p>Our catalog items (such as VeloDock mounts and medal hangers) are produced on-demand or in small batches in our micro-factory. The average delivery time is <strong>2 to 4 business days</strong>. For custom B2B projects and larger production runs, delivery times are quoted individually.</p>
-            <h4 style="color: var(--text-main); margin-top: 1rem;">Shipping Costs</h4>
-            <p>We provide fast, secure shipping across Europe with a primary focus on Belgium and the Netherlands:</p>
-            <ul style="padding-left: 1.2rem; margin-top: 0.5rem;">
-                <li><strong>Belgium:</strong> €5.95 (Free shipping on orders over €50)</li>
-                <li><strong>Netherlands:</strong> €6.95 (Free shipping on orders over €50)</li>
-                <li><strong>Other EU:</strong> Rates calculated at checkout.</li>
-            </ul>
+            <p>Our catalog items (such as VeloDock mounts and medal hangers) are produced on-demand or in small batches in our micro-factory. The average delivery time is <strong>2 to 4 business days</strong>.</p>
         `
     },
     privacy: {
         title: "Privacy Policy",
         html: `
             <h4 style="color: var(--text-main);">1. Data Processing</h4>
-            <p>Z-Vorm respects the privacy of all users of its website and ensures that the personal information you provide is treated confidentially. We use your data exclusively to process orders smoothly and to respond to custom quote requests.</p>
-            <h4 style="color: var(--text-main); margin-top: 1rem;">2. Retention & Security</h4>
-            <p>Your details (such as name, address, and email) are stored on secure servers and are never shared with third parties without your consent, unless necessary for fulfillment (such as courier services).</p>
+            <p>Z-Vorm respects the privacy of all users and treats personal information confidentially.</p>
         `
     },
     terms: {
         title: "Terms & Conditions",
         html: `
             <h4 style="color: var(--text-main);">Article 1: Applicability</h4>
-            <p>These general terms and conditions apply to every offer made by Z-Vorm and to every distance contract established between the business and the customer.</p>
-            <h4 style="color: var(--text-main); margin-top: 1rem;">Article 2: Pricing & Quotes</h4>
-            <p>All catalog prices include VAT (for consumers) unless stated otherwise. Prices generated through the B2B engineering portal exclude shipping and specialized post-processing unless explicitly noted.</p>
-            <h4 style="color: var(--text-main); margin-top: 1rem;">Article 3: Custom Work</h4>
-            <p>Printed objects based on uploaded STL files or customer-specific CAD designs are custom-manufactured. The right of withdrawal does not apply to custom production orders.</p>
+            <p>These general terms and conditions apply to every offer made by Z-Vorm.</p>
         `
     }
 };
