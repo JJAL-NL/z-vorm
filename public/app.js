@@ -1028,7 +1028,7 @@ const legalContent = {
     }
 };
 
-openLegalModal = function(type) {
+function openLegalModal(type) {
     const data = legalContent[type];
     if (!data) return;
 
@@ -1039,7 +1039,7 @@ openLegalModal = function(type) {
     if (titleEl) titleEl.innerText = data.title;
     if (bodyEl) bodyEl.innerHTML = data.html;
     if (modalEl) modalEl.style.display = 'flex';
-};
+}
 
 function closeLegalModal() {
     const modalEl = document.getElementById('legal-modal');
