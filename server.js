@@ -2,6 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
+const basicAuth = require('express-basic-auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,6 +10,15 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Secure both the admin page and all admin API endpoints
+app.use(['/admin.html', '/api/admin'], basicAuth({
+    users: { 
+        [process.env.ADMIN_USER || 'admin']: process.env.ADMIN_PASS || 'zvormsecure2026' 
+    },
+    challenge: true,
+    realm: 'Z-Vorm Admin Portal'
+}));
 
 const uploadDir = path.join(__dirname, 'public/uploads');
 const dataDir = path.join(__dirname, 'data');
@@ -194,18 +204,18 @@ app.post('/api/admin/materials/update/:id', (req, res) => {
 });
 
 app.delete('/api/admin/materials/:id', (req, res) => {
-    const data = getSettings();
-    data.materials = data.materials.filter(m => m.id != req.params.id);
-    fs.writeFileSync(settingsPath, JSON.stringify(data, null, 2));
-    res.json({ success: true });
+    const Data = getSettings();
+    Data.materials = data.materials.filter(m => m.id != req.params.id);
+    Fs.writeFileSync(settingsPath, JSON.stringify(data, null, 2));
+    Res.json({ success: true });
 });
 
-app.post('/api/contact', contactUpload.single('attachment'), (req, res) => {
-    const { name, email, subject, message } = req.body;
-    console.log(`New Inquiry from ${name} (${email}): ${subject} - ${message}`);
-    res.send(`<script>alert('Project submitted successfully! We will get back to you shortly.'); window.location.href='/';</script>`);
+App.post('/api/contact', contactUpload.single('attachment'), (req, res) => {
+    Const { name, email, subject, message } = req.body;
+    Console.log(`New Inquiry from ${name} (${email}): ${subject} - ${message}`);
+    Res.send(`<script>alert('Project submitted successfully! We will get back to you shortly.'); window.location.href='/';</script>`);
 });
 
-app.listen(PORT, () => {
-    console.log(`Z-Vorm server running on http://localhost:${PORT}`);
+App.listen(PORT, () => {
+    Console.log(`Z-Vorm server running on http://localhost:${PORT}`);
 });
