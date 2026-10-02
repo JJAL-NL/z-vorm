@@ -5,6 +5,7 @@ const multer = require('multer');
 const basicAuth = require('express-basic-auth');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
+const { exec } = require('child_process');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -59,6 +60,39 @@ if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
 const settingsPath = path.join(dataDir, 'settings.json');
+
+// Background function to commit and push changes back to GitHub for free persistence on Render
+function syncChangesToGitHub() {
+    if (!process.env.GH_PAT || !process.env.GITHUB_REPO) {
+        console.log('GitHub auto-sync credentials not configured. Skipping sync.');
+        return;
+    }
+
+    const repo = process.env.GITHUB_REPO; // e.g., github.com/YourUsername/Z-Vorm.git
+    const token = process.env.GH_PAT;
+
+    const command = `git config --global user.name "Z-Vorm Admin Bot" && ` +
+                    `git config --global user.email "admin@z-vorm.nl" && ` +
+                    `git add data/settings.json public/uploads/ && ` +
+                    `git diff-index --quiet HEAD || (` +
+                    `git commit -m "Auto-sync: Admin update [skip ci]" && ` +
+                    `git push https://${token}@${repo} main)`;
+
+    exec(command, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Git sync error: ${error.message}`);
+            return;
+        }
+        console.log(`Successfully synced admin changes to GitHub: ${stdout.trim()}`);
+    });
+}
+
+// Wrapper to save settings locally and trigger GitHub auto-sync
+function saveSettings(data) {
+    fs.writeFileSync(settingsPath, JSON.stringify(data, null, 2));
+    syncChangesToGitHub();
+}
+
 if (!fs.existsSync(settingsPath)) {
     const defaultData = {
         calculator: {
@@ -118,7 +152,7 @@ app.get('/api/settings', (req, res) => {
 app.post('/api/admin/settings', (req, res) => {
     const data = getSettings();
     data.calculator = req.body;
-    fs.writeFileSync(settingsPath, JSON.stringify(data, null, 2));
+    saveSettings(data);
     res.json({ success: true, message: 'Calculator settings updated successfully' });
 });
 
@@ -150,7 +184,7 @@ app.post('/api/admin/products', uploadProductImages.array('images', 5), (req, re
     };
     
     data.products.push(newProduct);
-    fs.writeFileSync(settingsPath, JSON.stringify(data, null, 2));
+    saveSettings(data);
     res.redirect('/z-vorm-manage-7842.html');
 });
 
@@ -177,7 +211,7 @@ app.post('/api/admin/products/update/:id', uploadProductImages.array('images', 5
             product.colors = names.map((n, i) => ({ name: n, hex: hexes[i] || '#f97316' }));
         }
 
-        fs.writeFileSync(settingsPath, JSON.stringify(data, null, 2));
+        saveSettings(data);
     }
     res.redirect('/z-vorm-manage-7842.html');
 });
@@ -185,7 +219,7 @@ app.post('/api/admin/products/update/:id', uploadProductImages.array('images', 5
 app.delete('/api/admin/products/:id', (req, res) => {
     const data = getSettings();
     data.products = data.products.filter(p => p.id != req.params.id);
-    fs.writeFileSync(settingsPath, JSON.stringify(data, null, 2));
+    saveSettings(data);
     res.json({ success: true });
 });
 
@@ -211,7 +245,7 @@ app.post('/api/admin/materials', (req, res) => {
         colors: colors.length > 0 ? colors : [{name: "Default", hex: "#f97316"}]
     });
 
-    fs.writeFileSync(settingsPath, JSON.stringify(data, null, 2));
+    saveSettings(data);
     res.redirect('/z-vorm-manage-7842.html');
 });
 
@@ -231,7 +265,7 @@ app.post('/api/admin/materials/update/:id', (req, res) => {
             material.colors = names.map((n, i) => ({ name: n, hex: hexes[i] || '#f97316' }));
         }
 
-        fs.writeFileSync(settingsPath, JSON.stringify(data, null, 2));
+        saveSettings(data);
     }
     res.redirect('/z-vorm-manage-7842.html');
 });
@@ -239,7 +273,7 @@ app.post('/api/admin/materials/update/:id', (req, res) => {
 app.delete('/api/admin/materials/:id', (req, res) => {
     const data = getSettings();
     data.materials = data.materials.filter(m => m.id != req.params.id);
-    fs.writeFileSync(settingsPath, JSON.stringify(data, null, 2));
+    saveSettings(data);
     res.json({ success: true });
 });
 
