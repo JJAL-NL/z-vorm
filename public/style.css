@@ -327,3 +327,13 @@ header img {
     mix-blend-mode: multiply;
     cursor: pointer;
 }
+
+/* --- Admin Panel Fixes --- */
+/* Force Chrome/Edge to make color picker a square */
+input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0 !important;
+}
+input[type="color"]::-webkit-color-swatch {
+    border: none !important;
+    border-radius: 4px !important;
+}

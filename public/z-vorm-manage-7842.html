@@ -498,26 +498,24 @@
             addColorInput('Matte Black', '#111111');
         }
 
-        // Updated CSS fix applied to color picker inputs
         function addColorInput(name = '', hex = '#f97316') {
             const container = document.getElementById('color-inputs-container');
             const div = document.createElement('div');
             div.style.cssText = "display: flex; gap: 0.5rem; align-items: center; background: white; padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid var(--border);";
             div.innerHTML = `
-                <input type="color" name="colorHexes" value="${hex}" style="appearance: none; -webkit-appearance: none; padding: 0; width: 38px; height: 38px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: transparent; overflow: hidden;">
+                <input type="color" name="colorHexes" value="${hex}" style="padding: 0; width: 38px; height: 38px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: transparent; overflow: hidden;">
                 <input type="text" name="colorNames" value="${name}" placeholder="Color Name" required style="padding: 0.3rem; border: 1px solid var(--border); border-radius: 4px; width: 110px;">
                 <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: red; cursor: pointer; font-weight: bold;">×</button>
             `;
             container.appendChild(div);
         }
 
-        // Updated CSS fix applied to color picker inputs
         function addProductColorInput(name = '', hex = '#f97316') {
             const container = document.getElementById('product-color-inputs-container');
             const div = document.createElement('div');
             div.style.cssText = "display: flex; gap: 0.5rem; align-items: center; background: white; padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid var(--border);";
             div.innerHTML = `
-                <input type="color" name="colorHexes" value="${hex}" style="appearance: none; -webkit-appearance: none; padding: 0; width: 38px; height: 38px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: transparent; overflow: hidden;">
+                <input type="color" name="colorHexes" value="${hex}" style="padding: 0; width: 38px; height: 38px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: transparent; overflow: hidden;">
                 <input type="text" name="colorNames" value="${name}" placeholder="Color Name" required style="padding: 0.3rem; border: 1px solid var(--border); border-radius: 4px; width: 110px;">
                 <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: red; cursor: pointer; font-weight: bold;">×</button>
             `;
