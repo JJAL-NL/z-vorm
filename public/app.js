@@ -40,7 +40,7 @@ function showSection(sectionId) {
     // Update active state in top navigation header
     const navButtons = document.querySelectorAll('header nav button');
     navButtons.forEach(btn => {
-        if (btn.getAttribute('onclick') && btn.getAttribute('onclick'].includes(sectionId)) {
+        if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(sectionId)) {
             btn.style.textDecoration = 'underline';
             btn.style.textUnderlineOffset = '6px';
             btn.style.textDecorationThickness = '2px';
