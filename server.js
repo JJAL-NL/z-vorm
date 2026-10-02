@@ -82,7 +82,6 @@ function syncChangesToGitHub() {
         return;
     }
 
-    // Rigorous normalization: strip protocols, trailing slashes, and .git extensions safely
     let rawRepo = process.env.GITHUB_REPO.trim();
     rawRepo = rawRepo.replace(/^https?:\/\//i, '');
     
@@ -123,6 +122,12 @@ if (!fs.existsSync(settingsPath)) {
             printerWattage: 150,
             profitMargin: 0.30,
             baseShipping: 7.00
+        },
+        infrastructure: {
+            renderUrl: "https://z-vorm.onrender.com",
+            githubRepo: "JUAL93/Z-Vorm",
+            nasIp: "192.168.1.150",
+            mollieEndpoint: "https://api.mollie.com"
         },
         materials: [
             { id: "pla", name: "PLA / PLA-PHA", pricePerKg: 20.00, description: "General prototypes, visual models, and eco-friendly tough prints.", colors: [{name: "Matte Black", hex: "#111111"}, {name: "Pure White", hex: "#f8fafc"}, {name: "Z-Vorm Orange", hex: "#f97316"}] },
@@ -179,7 +184,15 @@ app.post('/api/admin/settings', (req, res) => {
     res.json({ success: true, message: 'Calculator settings updated successfully' });
 });
 
-// Add Product with Multiple Images, Colors, Sizes, Lead Time, and Custom Text Support
+// Save Infrastructure Settings Endpoint
+app.post('/api/admin/infrastructure', (req, res) => {
+    const data = getSettings();
+    data.infrastructure = req.body;
+    saveSettings(data);
+    res.json({ success: true, message: 'Infrastructure settings updated successfully' });
+});
+
+// Add Product with Multiple Images & Order
 app.post('/api/admin/products', uploadProductImages.array('images', 5), (req, res) => {
     const data = getSettings();
     const imagePaths = req.files && req.files.length > 0 
@@ -211,7 +224,7 @@ app.post('/api/admin/products', uploadProductImages.array('images', 5), (req, re
     res.redirect('/z-vorm-manage-7842.html');
 });
 
-// Update Product with Customization Fields
+// Update Product with Image Reordering, Deletions, and New Uploads
 app.post('/api/admin/products/update/:id', uploadProductImages.array('images', 5), (req, res) => {
     const data = getSettings();
     const product = data.products.find(p => p.id == req.params.id);
@@ -224,9 +237,23 @@ app.post('/api/admin/products/update/:id', uploadProductImages.array('images', 5
         product.leadTimeBadge = req.body.leadTimeBadge !== undefined ? req.body.leadTimeBadge.trim() : (product.leadTimeBadge || '');
         product.customTextEnabled = req.body.customTextEnabled === 'true' || req.body.customTextEnabled === true;
         
-        if (req.files && req.files.length > 0) {
-            product.images = req.files.map(f => `/uploads/${f.filename}`);
+        let existingImages = [];
+        if (req.body.imageOrderJson) {
+            try {
+                existingImages = JSON.parse(req.body.imageOrderJson);
+            } catch(e) {
+                existingImages = product.images || [];
+            }
+        } else {
+            existingImages = product.images || [];
         }
+
+        const newUploadedImages = req.files && req.files.length > 0 
+            ? req.files.map(f => `/uploads/${f.filename}`) 
+            : [];
+
+        product.images = [...existingImages, ...newUploadedImages];
+        if (product.images.length === 0) product.images = ['/uploads/default.jpg'];
 
         if (req.body.colorNames && req.body.colorHexes) {
             const names = Array.isArray(req.body.colorNames) ? req.body.colorNames : [req.body.colorNames];
@@ -246,7 +273,7 @@ app.delete('/api/admin/products/:id', (req, res) => {
     res.json({ success: true });
 });
 
-// Add Material with Color Palette Objects & Price per kg
+// Add Material
 app.post('/api/admin/materials', (req, res) => {
     const data = getSettings();
     const { name, pricePerKg, description, colorNames, colorHexes } = req.body;
@@ -305,7 +332,6 @@ app.post('/api/contact', contactUpload.single('attachment'), async (req, res) =>
     const { name, email, subject, message, quantity } = req.body;
     console.log(`New Inquiry from ${name} (${email}): ${subject} - ${message}`);
 
-    // If RESEND_API_KEY is provided in environment variables, dispatch email via Resend
     if (process.env.RESEND_API_KEY) {
         try {
             const resend = new Resend(process.env.RESEND_API_KEY);
