@@ -33,13 +33,25 @@ app.use((req, res, next) => {
     next();
 });
 
-// Brute-force protection: limit login/admin requests
+// Brute-force protection: generous limit for normal admin use, plus manual reset support
 const adminLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // Limit each IP to 5 failed requests per window
-    message: 'Too many login attempts from this IP, please try again after 15 minutes.',
+    max: 100, // Increased to 100 requests so normal workflow never locks you out
+    message: 'Too many requests from this IP, please try again after 15 minutes.',
     standardHeaders: true,
     legacyHeaders: false,
+});
+
+// Manual rate limit reset helper route (visit /z-vorm-manage-reset to clear block instantly)
+app.get('/z-vorm-manage-reset', (req, res) => {
+    adminLimiter.resetKey(req.ip);
+    res.send(`
+        <div style="font-family: sans-serif; text-align: center; margin-top: 50px;">
+            <h2 style="color: #f97316;">Rate Limit Cleared Successfully!</h2>
+            <p>Your IP address has been cleared from the rate limiter block list.</p>
+            <a href="/z-vorm-manage-7842.html" style="display: inline-block; margin-top: 20px; padding: 10px 20px; background: #f97316; color: white; text-decoration: none; border-radius: 5px;">Return to Admin Portal</a>
+        </div>
+    `);
 });
 
 // Apply rate limiter and basic authentication to your obscured admin route and API endpoints
