@@ -105,7 +105,7 @@ async function initDB() {
 
     const client = new MongoClient(mongoUri);
     await client.connect();
-    console.log("Connected successfully to MongoDB Atlas!");[cite: 7]
+    console.log("Connected successfully to MongoDB Atlas!");
     
     const db = client.db('zvorm_db');
     settingsCollection = db.collection('settings');
@@ -417,7 +417,6 @@ app.get('/api/admin/analytics', async (req, res) => {
 // ----------------------------------------------------
 app.post('/api/create-payment', async (req, res) => {
     try {
-        // Fallback check if Mollie API key is missing or still using placeholder text
         if (!process.env.MOLLIE_API_KEY || process.env.MOLLIE_API_KEY.includes('test_your_mollie_api_key_here')) {
             return res.status(400).json({ 
                 error: 'Online payments are currently being configured. Please use "Contact Workshop" for your order.' 
@@ -526,7 +525,7 @@ app.post('/api/contact', contactUpload.single('attachment'), async (req, res) =>
                 estimatedWeightKg: 0
             };
             await ordersCollection.insertOne(newOrder);
-            console.log('Order successfully recorded to MongoDB orders collection.');[cite: 7]
+            console.log('Order successfully recorded to MongoDB orders collection.');
         } catch (dbErr) {
             console.error('Failed to save order to MongoDB:', dbErr);
         }
