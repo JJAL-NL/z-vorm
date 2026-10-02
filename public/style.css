@@ -82,6 +82,7 @@ main {
     margin: 5rem auto;
     padding: 0 2rem;
     position: relative;
+    z-index: 2;
 }
 
 h1, h2, h3, h4 {
@@ -132,7 +133,7 @@ h1 {
     to { opacity: 1; transform: translateX(0); }
 }
 
-/* Home Split Cards Container & Hover Interaction */
+/* Home Split Cards Container & Hover Interaction (Translucent Dark Blue Banner) */
 .split-container {
     display: flex;
     gap: 2rem;
@@ -141,11 +142,11 @@ h1 {
 
 .split-card {
     flex: 1;
-    background: rgba(30, 41, 59, 0.75);
-    backdrop-filter: blur(12px);
+    background: rgba(11, 19, 43, 0.55); /* Translucent dark blue */
+    backdrop-filter: blur(10px); /* Frosted glass effect showing home video */
     padding: 3rem;
     border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
@@ -161,7 +162,7 @@ h1 {
 
 .split-card:hover {
     transform: translateY(-8px) scale(1.03);
-    background: rgba(30, 41, 59, 0.92);
+    background: rgba(11, 19, 43, 0.78);
     box-shadow: 0 25px 40px -10px rgba(0, 0, 0, 0.5) !important;
     border-color: var(--primary) !important;
     opacity: 1 !important;
@@ -305,7 +306,19 @@ button:hover {
 .cap-card h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
 .cap-card p { color: var(--text-muted); font-size: 0.95rem; }
 
-/* --- Cinematic Black Video Overlay Styles --- */
+/* --- Cinematic Global Video Background Styles --- */
+#global-video-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    z-index: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+}
+
 .home-content {
     position: relative;
     z-index: 1;

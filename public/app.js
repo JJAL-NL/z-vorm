@@ -203,7 +203,7 @@ function renderShopProducts(products) {
 
     products.forEach(p => {
         const imgUrl = (p.images && p.images.length > 0) ? p.images[0] : (p.image || '/uploads/default.jpg');
-        const badgeHtml = p.leadTimeBadge ? `<span style="font-size: 0.7rem; color: #0284c7; background: #e0f2fe; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; display: inline-block; margin-bottom: 0.4rem;">${p.leadTimeBadge}</span>` : '';
+        const badgeHtml = p.leadTimeBadge ? `<span style="font-size: 0.7rem; color: #0284c7; background: #e0f2fe; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; display: inline-block; margin-bottom: 0.5rem;">${p.leadTimeBadge}</span>` : '';
         
         const card = document.createElement('div');
         card.className = 'shop-card cap-card';
@@ -217,13 +217,13 @@ function renderShopProducts(products) {
             <div style="position: relative; overflow: hidden; background: #f8fafc; height: 220px;">
                 <img src="${imgUrl}" alt="${p.name}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease;">
             </div>
-            <div style="padding: 1.5rem; display: flex; flex-direction: column; gap: 0.4rem; flex-grow: 1;">
+            <div style="padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 0.4rem; flex-grow: 1;">
                 ${badgeHtml}
                 <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text-main); margin: 0;">${p.name}</h3>
                 <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${p.description || 'High-precision manufactured accessory.'}</p>
-                <div style="margin-top: auto; padding-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
-                    <span style="color: var(--primary); font-weight: 800; font-size: 1.2rem;">€${p.price.toFixed(2)}</span>
-                    <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-main); background: var(--bg-card); padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid var(--border);">View Item →</span>
+                <div style="margin-top: auto; padding-top: 1.2rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9;">
+                    <span style="color: var(--text-main); font-weight: 800; font-size: 1.15rem;">€${p.price.toFixed(2)}</span>
+                    <span style="font-size: 0.8rem; font-weight: 600; color: var(--primary); letter-spacing: -0.01em;">View Item →</span>
                 </div>
             </div>
         `;
