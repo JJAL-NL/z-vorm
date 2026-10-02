@@ -8,6 +8,8 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const { Resend } = require('resend');
 const { MongoClient } = require('mongodb');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -63,14 +65,23 @@ app.use(['/z-vorm-manage-7842.html', '/api/admin'], adminLimiter, basicAuth({
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-const uploadDir = path.join(__dirname, 'public/uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-const productStorage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadDir),
-    filename: (req, file, cb) => cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname))
+// Configure Cloudinary for persistent cloud image storage
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
 });
-const uploadProductImages = multer({ storage: productStorage });
+
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'z-vorm-catalog',
+        allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
+        transformation: [{ width: 1000, height: 1000, crop: 'limit' }]
+    }
+});
+
+const uploadProductImages = multer({ storage: storage });
 const contactUpload = multer({ dest: path.join(__dirname, 'uploads/') });
 
 // ----------------------------------------------------
@@ -96,7 +107,6 @@ async function initDB() {
     
     const existing = await settingsCollection.findOne({ _id: 'site_settings' });
     
-    // Automatic Migration: If Mongo is empty, pull existing data from local JSON
     if (!existing) {
         console.log("No settings found in MongoDB. Initializing automatic migration...");
         let defaultData;
@@ -158,7 +168,6 @@ app.get('/api/settings', async (req, res) => {
         };
     });
 
-    // Only expose products that are visible (not in draft status) to the public frontend
     const publicProducts = (settings.products || []).filter(p => p.isVisible !== false);
 
     res.json({
@@ -185,7 +194,7 @@ app.post('/api/admin/infrastructure', async (req, res) => {
 app.post('/api/admin/products', uploadProductImages.array('images', 5), async (req, res) => {
     const data = await getSettings();
     const imagePaths = req.files && req.files.length > 0 
-        ? req.files.map(f => `/uploads/${f.filename}`) 
+        ? req.files.map(f => f.path) // Cloudinary returns the secure URL directly in f.path
         : ['/uploads/default.jpg'];
 
     let colors = [];
@@ -244,7 +253,7 @@ app.post('/api/admin/products/update/:id', uploadProductImages.array('images', 5
         }
 
         const newUploadedImages = req.files && req.files.length > 0 
-            ? req.files.map(f => `/uploads/${f.filename}`) 
+            ? req.files.map(f => f.path) 
             : [];
 
         product.images = [...existingImages, ...newUploadedImages];
@@ -388,7 +397,6 @@ app.post('/api/contact', contactUpload.single('attachment'), async (req, res) =>
     const { name, email, subject, message, quantity } = req.body;
     console.log(`New Inquiry from ${name} (${email}): ${subject} - ${message}`);
 
-    // Persist inquiry in MongoDB to feed Print Queue and Analytics
     if (ordersCollection) {
         try {
             const newOrder = {

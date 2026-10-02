@@ -12,6 +12,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "cloudinary": "^1.41.3",
     "dotenv": "^18.0.5",
     "express": "^5.2.1",
     "express-basic-auth": "^1.2.1",
@@ -19,6 +20,7 @@
     "helmet": "^8.3.0",
     "mongodb": "^7.7.0",
     "multer": "^2.4.0",
+    "multer-storage-cloudinary": "^4.0.0",
     "resend": "^6.32.0"
   }
 }
