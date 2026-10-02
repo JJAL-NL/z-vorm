@@ -306,6 +306,12 @@
                 </div>
                 <button type="submit" class="btn-primary">Save Infrastructure Settings</button>
             </form>
+
+            <div style="background: #f8fafc; padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border); margin-top: 2rem;">
+                <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.4rem;">Cloud Storage & Media Console</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Manage, inspect, or delete raw STL customer uploads and product images stored in Cloudinary.</p>
+                <a href="https://console.cloudinary.com/" target="_blank" style="display: inline-block; background: var(--primary); color: white; padding: 0.6rem 1.2rem; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.85rem;">Open Cloudinary Console →</a>
+            </div>
         </div>
     </div>
 
@@ -471,7 +477,6 @@
             imageDataList.sort((a, b) => a.order - b.order);
             document.getElementById('updated-images-order').value = JSON.stringify(imageDataList.map(i => i.url));
 
-            // Dynamically append hidden delete inputs so server.js receives them
             deleteList.forEach(url => {
                 const hiddenDel = document.createElement('input');
                 hiddenDel.type = 'hidden';
@@ -584,7 +589,7 @@
             loadAdminData();
         }
 
-        // Print Queue Logic
+        // Print Queue Logic with STL Quick Download & Accurate Column Sorting
         async function loadQueue() {
             try {
                 const res = await fetch('/api/admin/orders');
@@ -595,25 +600,34 @@
                 document.getElementById('queue-completed').innerHTML = '';
 
                 orders.forEach(order => {
+                    let stlButtonHtml = '';
+                    if (order.message && order.message.includes('https://')) {
+                        const urlMatch = order.message.match(/https:\/\/[^\s]+/);
+                        if (urlMatch) {
+                            stlButtonHtml = `<a href="${urlMatch[0]}" target="_blank" class="btn-secondary" style="display: block; text-align: center; text-decoration: none; padding: 0.3rem; font-size: 0.75rem; margin-top: 0.5rem; background: #0284c7;">📥 Download Attached STL</a>`;
+                        }
+                    }
+
                     const card = document.createElement('div');
                     card.className = 'kanban-card';
                     card.innerHTML = `
                         <h4>${order.subject}</h4>
                         <p><strong>Customer:</strong> ${order.customerName}</p>
                         <p><strong>Qty:</strong> ${order.quantity}</p>
-                        ${order.status === 'Completed' || order.status === 'Shipped' 
-                            ? `<p><strong>Revenue:</strong> €${order.totalPrice}</p><p><strong>Filament:</strong>${order.estimatedWeightKg}kg</p>` 
+                        ${stlButtonHtml}
+                        ${order.status === 'Completed' || order.status === 'Shipped' || order.status === 'Paid'
+                            ? `<p><strong>Revenue:</strong> €${order.totalPrice \vert{}\vert{} 0}</p><p><strong>Filament:</strong>${order.estimatedWeightKg || 0}kg</p>` 
                             : ''}
                         
                         <div style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.3rem;">
                             <label style="font-size: 0.7rem; font-weight: bold; margin-bottom: 0;">Update Status:</label>
                             <select onchange="updateOrderStatus('${order.id}', this.value)" style="padding: 0.2rem; font-size: 0.8rem; height: auto;">
-                                <option value="Pending" ${order.status === 'Pending' ? 'selected' : ''}>Pending</option>
-                                <option value="Printing" ${order.status === 'Printing' ? 'selected' : ''}>Printing</option>
-                                <option value="Completed" ${order.status === 'Completed' ? 'selected' : ''}>Completed</option>
+                                <option value="Pending" ${order.status === 'Pending' || order.status === 'Payment Pending' || order.status === 'Paid' ? 'selected' : ''}>Pending / Slicing</option>
+                                <option value="Printing" ${order.status === 'Printing' ? 'selected' : ''}>Currently Printing</option>
+                                <option value="Completed" ${order.status === 'Completed' || order.status === 'Shipped' ? 'selected' : ''}>Completed / Shipped</option>
                             </select>
                             
-                            ${order.status !== 'Completed' ? `
+                            ${order.status !== 'Completed' && order.status !== 'Shipped' ? `
                                 <input type="number" step="0.01" id="price_${order.id}" placeholder="Final Price (€)" value="${order.totalPrice || ''}" style="padding: 0.3rem; font-size: 0.8rem;">
                                 <input type="number" step="0.01" id="weight_${order.id}" placeholder="Est. Weight (kg)" value="${order.estimatedWeightKg || ''}" style="padding: 0.3rem; font-size: 0.8rem;">
                                 <button onclick="saveOrderMetrics('${order.id}')" class="btn-secondary" style="padding: 0.25rem; font-size: 0.7rem; width: 100%;">Save Metrics</button>
@@ -621,9 +635,15 @@
                         </div>
                     `;
 
-                    if (order.status === 'Pending') document.getElementById('queue-pending').appendChild(card);
-                    else if (order.status === 'Printing') document.getElementById('queue-printing').appendChild(card);
-                    else document.getElementById('queue-completed').appendChild(card);
+                    // Correct column sorting logic matching database statuses
+                    const currentStatus = order.status || 'Pending';
+                    if (currentStatus === 'Pending' || currentStatus === 'Payment Pending' || currentStatus === 'Paid' || currentStatus === 'Cancelled') {
+                        document.getElementById('queue-pending').appendChild(card);
+                    } else if (currentStatus === 'Printing') {
+                        document.getElementById('queue-printing').appendChild(card);
+                    } else {
+                        document.getElementById('queue-completed').appendChild(card);
+                    }
                 });
             } catch (err) {
                 console.error("Failed to load queue:", err);
