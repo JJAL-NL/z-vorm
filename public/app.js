@@ -38,7 +38,7 @@ function showSection(sectionId) {
     // Update active state in top navigation header
     const navButtons = document.querySelectorAll('header nav button');
     navButtons.forEach(btn => {
-        if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(sectionId)) {
+        if (btn.getAttribute('onclick') && btn.getAttribute('onclick'].includes(sectionId)) {
             btn.style.textDecoration = 'underline';
             btn.style.textUnderlineOffset = '6px';
             btn.style.textDecorationThickness = '2px';
@@ -87,6 +87,7 @@ let activeProduct = null;
 let activeSelectedColor = 'Standard';
 let activeSelectedSize = '';
 let activeBasePrice = 0;
+let currentImageIndex = 0;
 let cart = [];
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -194,9 +195,10 @@ function renderShopProducts(products) {
     }).join('');
 }
 
-async function openProductModal(product) {
+function openProductModal(product) {
     activeProduct = product;
     activeBasePrice = product.price;
+    currentImageIndex = 0;
 
     document.getElementById('modal-title').innerText = product.name;
     document.getElementById('modal-price').innerText = `€${product.price.toFixed(2)}`;
@@ -209,13 +211,7 @@ async function openProductModal(product) {
         leadBadgeModal.style.display = product.leadTimeBadge ? 'inline-block' : 'none';
     }
 
-    const images = (product.images && product.images.length > 0) ? product.images : [product.image || '/uploads/default.jpg'];
-    document.getElementById('modal-main-img').src = images[0];
-
-    const thumbnailsEl = document.getElementById('modal-thumbnails');
-    thumbnailsEl.innerHTML = images.map((img, idx) => `
-        <img src="${img}" onclick="document.getElementById('modal-main-img').src='${img}'" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 2px solid ${idx === 0 ? 'var(--primary)' : 'var(--border)'}; cursor: pointer;">
-    `).join('');
+    updateModalGallery();
 
     const sizeContainer = document.getElementById('modal-size-container');
     const sizeSwatches = document.getElementById('modal-size-swatches');
@@ -258,6 +254,37 @@ async function openProductModal(product) {
     document.getElementById('product-modal').style.display = 'flex';
 }
 
+function updateModalGallery() {
+    const images = (activeProduct.images && activeProduct.images.length > 0) ? activeProduct.images : [activeProduct.image || '/uploads/default.jpg'];
+    const mainImg = document.getElementById('modal-main-img');
+    const arrows = document.getElementById('modal-carousel-arrows');
+    const thumbnailsEl = document.getElementById('modal-thumbnails');
+
+    mainImg.src = images[currentImageIndex];
+
+    if (images.length > 1) {
+        arrows.style.display = 'flex';
+    } else {
+        arrows.style.display = 'none';
+    }
+
+    thumbnailsEl.innerHTML = images.map((img, idx) => `
+        <img src="${img}" onclick="currentImageIndex = ${idx}; updateModalGallery();" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 2px solid ${idx === currentImageIndex ? 'var(--primary)' : 'var(--border)'}; cursor: pointer;">
+    `).join('');
+}
+
+function nextModalImage() {
+    const images = (activeProduct.images && activeProduct.images.length > 0) ? activeProduct.images : [activeProduct.image || '/uploads/default.jpg'];
+    currentImageIndex = (currentImageIndex + 1) % images.length;
+    updateModalGallery();
+}
+
+function prevModalImage() {
+    const images = (activeProduct.images && activeProduct.images.length > 0) ? activeProduct.images : [activeProduct.image || '/uploads/default.jpg'];
+    currentImageIndex = (currentImageIndex - 1 + images.length) % images.length;
+    updateModalGallery();
+}
+
 function selectModalColor(colorName, el) {
     activeSelectedColor = colorName;
     el.parentElement.querySelectorAll('div').forEach(d => d.style.borderColor = '#cbd5e1');
@@ -292,6 +319,12 @@ function updateTotalPrice() {
 
 function closeProductModal() {
     document.getElementById('product-modal').style.display = 'none';
+}
+
+function closeProductModalOnBackground(event) {
+    if (event.target.id === 'product-modal') {
+        closeProductModal();
+    }
 }
 
 function submitShopOrder() {
@@ -555,7 +588,6 @@ function renderMaterialSelector(materials) {
     const container = document.getElementById('material-selector');
     if (!container) return;
 
-    // Default material to PLA or the first available
     if (!selectedMaterial) {
         selectedMaterial = materials.find(m => m.name.toUpperCase().includes('PLA')) || materials[0];
         if (selectedMaterial && selectedMaterial.colors && selectedMaterial.colors.length > 0) {
@@ -568,7 +600,6 @@ function renderMaterialSelector(materials) {
         return `<option value="${m.id}" ${isSelected}>${m.name} ${m.diffLabel ? '(' + m.diffLabel + ')' : ''}</option>`;
     }).join('');
 
-    // Render drop-down list, a description block, and dynamic color container
     container.innerHTML = `
         <select id="material-dropdown" onchange="handleMaterialChange(this.value)" style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); font-size: 0.95rem; font-weight: 600; color: var(--text-main); cursor: pointer; outline: none;">
             ${optionsHtml}
@@ -581,13 +612,11 @@ function renderMaterialSelector(materials) {
 }
 
 function renderMaterialDetails() {
-    // Populate description/usage
     const descContainer = document.getElementById('material-description');
     if (descContainer && selectedMaterial) {
         descContainer.innerText = selectedMaterial.description || selectedMaterial.usage || 'Standard industrial material formulation.';
     }
 
-    // Populate colors
     const colorContainer = document.getElementById('dynamic-color-container');
     if (!colorContainer) return;
 
@@ -614,7 +643,6 @@ function handleMaterialChange(id) {
         if (!mat) return;
         selectedMaterial = mat;
 
-        // Reset to default color for new material
         if (mat.colors && mat.colors.length > 0) {
             selectedColorHex = mat.colors[0].hex;
         }
@@ -625,7 +653,6 @@ function handleMaterialChange(id) {
             currentMesh.material.color.set(selectedColorHex);
         }
 
-        // Trigger immediate calculation update with the newly selected material
         if (currentGeometry && currentSize) {
             calculateModelMetrics(currentGeometry, currentSize);
         }
@@ -744,7 +771,6 @@ async function calculateModelMetrics(geometry, size) {
 
         const basePricePerKg = settings.basePricePerKg || 20.00;
         
-        // Parse material price scaling based on diffLabel (e.g. "+50% vs Base") or direct price
         let pricePerKg = basePricePerKg;
         if (selectedMaterial) {
             if (selectedMaterial.pricePerKg) {
@@ -763,7 +789,6 @@ async function calculateModelMetrics(geometry, size) {
         const unitPrice = productionCost / (1 - settings.profitMargin);
         const totalPrice = unitPrice * currentB2bQty;
 
-        // Correctly calculate total batch printing time (hours and minutes)
         let totalMinutes = Math.round(totalHoursSingle * 60) * currentB2bQty;
         let batchHours = Math.floor(totalMinutes / 60);
         let batchMinutes = totalMinutes % 60;

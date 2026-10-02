@@ -6,6 +6,7 @@ const basicAuth = require('express-basic-auth');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const { exec } = require('child_process');
+const { Resend } = require('resend'); // Prepared for Option A Email Delivery
 
 const app = express();
 app.set('trust proxy', 1); // Trust Render's load balancer proxy headers
@@ -81,8 +82,15 @@ function syncChangesToGitHub() {
         return;
     }
 
-    // Sanitize repo string to strip any trailing slashes or duplicate .git extensions
-    const cleanRepo = process.env.GITHUB_REPO.trim().replace(/\/+$/, '').replace(/\.git$/, '');
+    // Rigorous normalization: strip protocols, trailing slashes, and .git extensions safely
+    let rawRepo = process.env.GITHUB_REPO.trim();
+    rawRepo = rawRepo.replace(/^https?:\/\//i, '');
+    
+    while (rawRepo.endsWith('.git') || rawRepo.endsWith('/')) {
+        rawRepo = rawRepo.replace(/\.git$/, '').replace(/\/+$/, '');
+    }
+
+    const cleanRepo = rawRepo;
     const token = process.env.GH_PAT;
 
     const command = `rm -f .git/index.lock && ` +
@@ -292,9 +300,29 @@ app.delete('/api/admin/materials/:id', (req, res) => {
     res.json({ success: true });
 });
 
-app.post('/api/contact', contactUpload.single('attachment'), (req, res) => {
-    const { name, email, subject, message } = req.body;
+// Contact form submission with Resend Email Integration (Option A)
+app.post('/api/contact', contactUpload.single('attachment'), async (req, res) => {
+    const { name, email, subject, message, quantity } = req.body;
     console.log(`New Inquiry from ${name} (${email}): ${subject} - ${message}`);
+
+    // If RESEND_API_KEY is provided in environment variables, dispatch email via Resend
+    if (process.env.RESEND_API_KEY) {
+        try {
+            const resend = new Resend(process.env.RESEND_API_KEY);
+            await resend.emails.send({
+                from: 'Z-Vorm Portal <admin@z-vorm.nl>',
+                to: 'contact@z-vorm.nl',
+                subject: `[Z-Vorm Inquiry] ${subject || 'New Contact Message'}`,
+                text: `You have received a new message from your website portal:\n\nName: ${name}\nEmail: ${email}\nSubject: ${subject}\nQuantity: ${quantity || 'N/A'}\n\nMessage:\n${message}`
+            });
+            console.log('Successfully dispatched inquiry email via Resend.');
+        } catch (emailErr) {
+            console.error('Failed to send email via Resend:', emailErr.message);
+        }
+    } else {
+        console.log('RESEND_API_KEY not configured. Inquiry logged to console only.');
+    }
+
     res.send(`<script>alert('Project submitted successfully! We will get back to you shortly.'); window.location.href='/';</script>`);
 });
 
