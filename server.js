@@ -8,6 +8,7 @@ const helmet = require('helmet');
 const { exec } = require('child_process');
 
 const app = express();
+app.set('trust proxy', 1); // <--- Added to trust Render's load balancer proxy headers
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
