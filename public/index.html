@@ -304,79 +304,74 @@
         </section>
     </main>
 
-    <!-- Product Detail Modal (Scrollable, Background Click to Close, Carousel Arrows) -->
+    <!-- Product Detail Modal (Side-by-Side Split View & Consistent Close Style) -->
     <div id="product-modal" onclick="closeProductModalOnBackground(event)" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px); padding: 1rem;">
-        <div style="background: white; width: 600px; max-width: 100%; max-height: 85vh; border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); display: flex; flex-direction: column; position: relative;" onclick="event.stopPropagation()">
+        <div style="background: white; width: 850px; max-width: 95%; max-height: 85vh; border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); display: grid; grid-template-columns: 1fr 1fr; position: relative;" onclick="event.stopPropagation()">
             
-            <!-- Close Button -->
-            <button onclick="closeProductModal()" title="Close" style="position: absolute; top: 1rem; right: 1rem; background: rgba(240,240,240,0.8); border: none; cursor: pointer; font-weight: 700; font-size: 1.1rem; width: 32px; height: 32px; border-radius: 50%; color: var(--text-main); display: flex; align-items: center; justify-content: center; z-index: 10; transition: background 0.2s;">✕</button>
+            <!-- Consistent Close Button Style -->
+            <button onclick="closeProductModal()" title="Close" style="position: absolute; top: 1.2rem; right: 1.2rem; background: transparent; border: none; cursor: pointer; font-weight: 700; font-size: 1.3rem; color: var(--text-main); display: flex; align-items: center; justify-content: center; z-index: 10; transition: color 0.2s;" onmouseenter="this.style.color='var(--primary)'" onmouseleave="this.style.color='var(--text-main)'">✕</button>
 
-            <!-- Scrollable Content Body -->
-            <div style="overflow-y: auto; max-height: 85vh; padding: 2rem; display: flex; flex-direction: column; gap: 1.2rem;">
-                
-                <!-- Image Gallery Container with Carousel Arrows -->
-                <div style="position: relative; background: #f8fafc; border-radius: 10px; border: 1px solid var(--border); overflow: hidden; height: 260px; display: flex; align-items: center; justify-content: center;">
+            <!-- Left: Image Gallery & Carousel -->
+            <div style="background: #f8fafc; padding: 2rem; display: flex; flex-direction: column; gap: 1rem; align-items: center; justify-content: center; border-right: 1px solid var(--border); position: relative;">
+                <div style="position: relative; width: 100%; height: 300px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border);">
                     <img id="modal-main-img" src="" alt="Product Preview" style="width: 100%; height: 100%; object-fit: cover;">
                     
                     <!-- Carousel Arrows (Hidden if single image) -->
-                    <div id="modal-carousel-arrows" style="position: absolute; inset-x: 0.5rem; display: flex; justify-content: space-between; align-items: center; pointer-events: none; display: none;">
+                    <div id="modal-carousel-arrows" style="position: absolute; inset-x: 0.5rem; top: 50%; transform: translateY(-50%); display: flex; justify-content: space-between; align-items: center; pointer-events: none; display: none;">
                         <button type="button" onclick="prevModalImage()" style="pointer-events: auto; background: rgba(0,0,0,0.6); color: white; border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1rem; transition: background 0.2s;">‹</button>
                         <button type="button" onclick="nextModalImage()" style="pointer-events: auto; background: rgba(0,0,0,0.6); color: white; border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1rem; transition: background 0.2s;">›</button>
                     </div>
                 </div>
-
-                <!-- Thumbnails Gallery -->
                 <div id="modal-thumbnails" style="display: flex; gap: 0.5rem; overflow-x: auto; width: 100%; justify-content: center;"></div>
+            </div>
 
-                <!-- Lead Time Badge -->
-                <div id="modal-lead-badge" style="display: none; font-size: 0.75rem; color: #0284c7; background: #e0f2fe; padding: 0.25rem 0.6rem; border-radius: 4px; font-weight: 600; width: fit-content;"></div>
-
-                <!-- Title, Price & Description -->
+            <!-- Right: Scrollable Details, Colors, Qty & Price -->
+            <div style="padding: 2.5rem; overflow-y: auto; max-height: 85vh; display: flex; flex-direction: column; justify-content: space-between; gap: 1.2rem;">
                 <div>
-                    <h2 id="modal-title" style="font-size: 1.4rem; margin-bottom: 0.3rem; color: var(--text-main);"></h2>
-                    <p id="modal-price" style="font-size: 1.2rem; font-weight: 800; color: var(--primary); margin-bottom: 0.8rem;"></p>
-                    <div style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5;">
-                        <p id="modal-desc"></p>
+                    <!-- Lead Time Badge -->
+                    <div id="modal-lead-badge" style="display: none; font-size: 0.75rem; color: #0284c7; background: #e0f2fe; padding: 0.25rem 0.6rem; border-radius: 4px; font-weight: 600; margin-bottom: 0.6rem; width: fit-content;"></div>
+
+                    <h2 id="modal-title" style="font-size: 1.5rem; margin-bottom: 0.3rem; color: var(--text-main);"></h2>
+                    <p id="modal-price" style="font-size: 1.3rem; font-weight: 800; color: var(--primary); margin-bottom: 0.8rem;"></p>
+                    <p id="modal-desc" style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.2rem; line-height: 1.5;"></p>
+
+                    <!-- Size Selection Container -->
+                    <div style="margin-bottom: 1.2rem; display: none;" id="modal-size-container">
+                        <label style="font-size: 0.8rem; font-weight: 700; display: block; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px;">Select Size</label>
+                        <div id="modal-size-swatches" style="display: flex; gap: 0.6rem; flex-wrap: wrap;"></div>
                     </div>
-                </div>
 
-                <!-- Size Selection Container -->
-                <div style="display: none;" id="modal-size-container">
-                    <label style="font-size: 0.8rem; font-weight: 700; display: block; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px;">Select Size</label>
-                    <div id="modal-size-swatches" style="display: flex; gap: 0.6rem; flex-wrap: wrap;"></div>
-                </div>
+                    <!-- Custom Text / Engraving Container -->
+                    <div style="margin-bottom: 1.2rem; display: none;" id="modal-custom-text-container">
+                        <label style="font-size: 0.8rem; font-weight: 700; display: block; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px;">Custom Engraving / Text</label>
+                        <input type="text" id="modal-custom-text-input" placeholder="Enter custom text..." style="width: 100%; padding: 0.6rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); font-size: 0.9rem;">
+                    </div>
 
-                <!-- Custom Text / Engraving Container -->
-                <div style="display: none;" id="modal-custom-text-container">
-                    <label style="font-size: 0.8rem; font-weight: 700; display: block; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px;">Custom Engraving / Text</label>
-                    <input type="text" id="modal-custom-text-input" placeholder="Enter custom text..." style="width: 100%; padding: 0.6rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); font-size: 0.9rem;">
-                </div>
+                    <!-- Color Selection -->
+                    <div style="margin-bottom: 1.2rem;" id="modal-color-container">
+                        <label style="font-size: 0.8rem; font-weight: 700; display: block; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px;">Select Color</label>
+                        <div id="modal-color-swatches" style="display: flex; gap: 0.6rem; flex-wrap: wrap;"></div>
+                    </div>
 
-                <!-- Color Selection -->
-                <div id="modal-color-container">
-                    <label style="font-size: 0.8rem; font-weight: 700; display: block; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px;">Select Color</label>
-                    <div id="modal-color-swatches" style="display: flex; gap: 0.6rem; flex-wrap: wrap;"></div>
-                </div>
-
-                <!-- Quantity & Checkout Footer -->
-                <div style="display: flex; flex-direction: column; gap: 1rem; border-top: 1px solid var(--border); pt: 1rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
-                        <label style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Quantity</label>
-                        <div style="display: flex; align-items: center; gap: 0.5rem; width: 120px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--bg-card);">
+                    <!-- Quantity Selector -->
+                    <div style="margin-bottom: 1.2rem;">
+                        <label style="font-size: 0.8rem; font-weight: 700; display: block; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px;">Quantity</label>
+                        <div style="display: flex; align-items: center; gap: 0.5px; width: 120px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--bg-card);">
                             <button type="button" onclick="adjustQty(-1)" style="padding: 0.5rem 0.8rem; background: none; border: none; cursor: pointer; font-weight: bold; font-size: 1rem;">-</button>
                             <input type="number" id="modal-qty" value="1" min="1" max="99" onchange="updateTotalPrice()" style="width: 40px; text-align: center; border: none; background: none; font-weight: 600; font-size: 0.9rem;">
                             <button type="button" onclick="adjustQty(1)" style="padding: 0.5rem 0.8rem; background: none; border: none; cursor: pointer; font-weight: bold; font-size: 1rem;">+</button>
                         </div>
                     </div>
+                </div>
 
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                <!-- Action Button -->
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-top: 0.8rem; border-top: 1px solid var(--border);">
                         <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Total Price:</span>
                         <span id="modal-total-price" style="font-size: 1.4rem; font-weight: 800; color: var(--text-main);">€0.00</span>
                     </div>
-
                     <button onclick="submitShopOrder()" style="width: 100%; background: var(--primary); color: white; border: none; padding: 0.9rem; border-radius: 8px; font-weight: 700; cursor: pointer; transition: background 0.2s;">Add to Cart & Checkout →</button>
                 </div>
-
             </div>
         </div>
     </div>
