@@ -83,7 +83,8 @@ function syncChangesToGitHub() {
     const repo = process.env.GITHUB_REPO; // e.g., github.com/JUAL93/Z-Vorm
     const token = process.env.GH_PAT;
 
-    const command = `git config --global user.name "Z-Vorm Admin Bot" && ` +
+    const command = `rm -f .git/index.lock && ` +
+                    `git config --global user.name "Z-Vorm Admin Bot" && ` +
                     `git config --global user.email "admin@z-vorm.nl" && ` +
                     `git add data/settings.json public/uploads/ && ` +
                     `git diff-index --quiet HEAD || (` +
