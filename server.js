@@ -3,22 +3,55 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 const basicAuth = require('express-basic-auth');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
 
-// Secure both the admin page and all admin API endpoints
-app.use(['/admin.html', '/api/admin'], basicAuth({
+// Secure HTTP headers & HSTS (Strict Transport Security)
+app.use(
+    helmet({
+        contentSecurityPolicy: false, // Keep relaxed for standard web assets
+        hsts: {
+            maxAge: 31536000, // 1 year HSTS policy
+            includeSubDomains: true,
+            preload: true
+        }
+    })
+);
+
+// Force HTTPS redirection in production
+app.use((req, res, next) => {
+    if (req.headers['x-forwarded-proto'] !== 'https' && process.env.NODE_ENV === 'production') {
+        return res.redirect(`https://${req.headers.host}${req.url}`);
+    }
+    next();
+});
+
+// Brute-force protection: limit login/admin requests
+const adminLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // Limit each IP to 5 failed requests per window
+    message: 'Too many login attempts from this IP, please try again after 15 minutes.',
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Apply rate limiter and basic authentication to your obscured admin route and API endpoints
+app.use(['/z-vorm-manage-7842.html', '/api/admin'], adminLimiter, basicAuth({
     users: { 
         [process.env.ADMIN_USER || 'admin']: process.env.ADMIN_PASS || 'zvormsecure2026' 
     },
     challenge: true,
     realm: 'Z-Vorm Admin Portal'
 }));
+
+// Serve static files after security checks
+app.use(express.static(path.join(__dirname, 'public')));
 
 const uploadDir = path.join(__dirname, 'public/uploads');
 const dataDir = path.join(__dirname, 'data');
@@ -118,7 +151,7 @@ app.post('/api/admin/products', uploadProductImages.array('images', 5), (req, re
     
     data.products.push(newProduct);
     fs.writeFileSync(settingsPath, JSON.stringify(data, null, 2));
-    res.redirect('/admin.html');
+    res.redirect('/z-vorm-manage-7842.html');
 });
 
 // Update Product with Customization Fields
@@ -146,7 +179,7 @@ app.post('/api/admin/products/update/:id', uploadProductImages.array('images', 5
 
         fs.writeFileSync(settingsPath, JSON.stringify(data, null, 2));
     }
-    res.redirect('/admin.html');
+    res.redirect('/z-vorm-manage-7842.html');
 });
 
 app.delete('/api/admin/products/:id', (req, res) => {
@@ -179,7 +212,7 @@ app.post('/api/admin/materials', (req, res) => {
     });
 
     fs.writeFileSync(settingsPath, JSON.stringify(data, null, 2));
-    res.redirect('/admin.html');
+    res.redirect('/z-vorm-manage-7842.html');
 });
 
 // Update Material
@@ -200,22 +233,22 @@ app.post('/api/admin/materials/update/:id', (req, res) => {
 
         fs.writeFileSync(settingsPath, JSON.stringify(data, null, 2));
     }
-    res.redirect('/admin.html');
+    res.redirect('/z-vorm-manage-7842.html');
 });
 
 app.delete('/api/admin/materials/:id', (req, res) => {
-    const Data = getSettings();
-    Data.materials = data.materials.filter(m => m.id != req.params.id);
-    Fs.writeFileSync(settingsPath, JSON.stringify(data, null, 2));
-    Res.json({ success: true });
+    const data = getSettings();
+    data.materials = data.materials.filter(m => m.id != req.params.id);
+    fs.writeFileSync(settingsPath, JSON.stringify(data, null, 2));
+    res.json({ success: true });
 });
 
-App.post('/api/contact', contactUpload.single('attachment'), (req, res) => {
-    Const { name, email, subject, message } = req.body;
-    Console.log(`New Inquiry from ${name} (${email}): ${subject} - ${message}`);
-    Res.send(`<script>alert('Project submitted successfully! We will get back to you shortly.'); window.location.href='/';</script>`);
+app.post('/api/contact', contactUpload.single('attachment'), (req, res) => {
+    const { name, email, subject, message } = req.body;
+    console.log(`New Inquiry from ${name} (${email}): ${subject} - ${message}`);
+    res.send(`<script>alert('Project submitted successfully! We will get back to you shortly.'); window.location.href='/';</script>`);
 });
 
-App.listen(PORT, () => {
-    Console.log(`Z-Vorm server running on http://localhost:${PORT}`);
+app.listen(PORT, () => {
+    console.log(`Z-Vorm server running on http://localhost:${PORT}`);
 });
