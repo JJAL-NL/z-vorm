@@ -53,7 +53,6 @@
         .btn-secondary { background: #3b82f6; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.8rem; }
         .btn-secondary:hover { background: #2563eb; }
 
-        /* Kanban Board Styles */
         .kanban-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
         .kanban-col { background: #f1f5f9; padding: 1rem; border-radius: 8px; border: 1px solid var(--border); }
         .kanban-col h3 { font-size: 0.9rem; font-weight: 700; text-transform: uppercase; margin-bottom: 1rem; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; }
@@ -61,7 +60,6 @@
         .kanban-card h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.25rem; }
         .kanban-card p { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem; }
         
-        /* Analytics Dashboard Styles */
         .analytics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
         .kpi-card { background: white; padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border); text-align: center; }
         .kpi-card h4 { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 0.5rem; }
@@ -139,7 +137,6 @@
                     </div>
                 </div>
 
-                <!-- Existing Images Manager (for editing) -->
                 <div id="existing-images-manager" style="display:none; background: #f8fafc; border: 1px solid var(--border); padding: 1rem; border-radius: 8px;">
                     <label style="margin-bottom: 0.8rem;">Manage Existing Images (Reorder & Delete)</label>
                     <div id="image-sorting-container" style="display: flex; gap: 1rem; flex-wrap: wrap;"></div>
@@ -233,17 +230,14 @@
         <div id="panel-queue" class="panel">
             <h2>Active Print Queue & Orders</h2>
             <div class="kanban-board">
-                <!-- Pending Column -->
                 <div class="kanban-col">
                     <h3 style="color: #64748b;">Pending / Slicing</h3>
                     <div id="queue-pending"></div>
                 </div>
-                <!-- Printing Column -->
                 <div class="kanban-col">
                     <h3 style="color: #f97316;">Currently Printing</h3>
                     <div id="queue-printing"></div>
                 </div>
-                <!-- Completed Column -->
                 <div class="kanban-col">
                     <h3 style="color: #16a34a;">Completed / Shipped</h3>
                     <div id="queue-completed"></div>
