@@ -192,82 +192,92 @@ app.post('/api/admin/infrastructure', async (req, res) => {
 });
 
 app.post('/api/admin/products', uploadProductImages.array('images', 5), async (req, res) => {
-    const data = await getSettings();
-    const imagePaths = req.files && req.files.length > 0 
-        ? req.files.map(f => f.path) // Cloudinary returns the secure URL directly in f.path
-        : ['/uploads/default.jpg'];
-
-    let colors = [];
-    if (req.body.colorNames && req.body.colorHexes) {
-        const names = Array.isArray(req.body.colorNames) ? req.body.colorNames : [req.body.colorNames];
-        const hexes = Array.isArray(req.body.colorHexes) ? req.body.colorHexes : [req.body.colorHexes];
-        colors = names.map((n, i) => ({ name: n, hex: hexes[i] || '#f97316' }));
-    }
-
-    const newProduct = {
-        id: Date.now(),
-        name: req.body.name,
-        price: parseFloat(req.body.price),
-        description: req.body.description || '',
-        category: req.body.category || 'Shop',
-        sizes: req.body.sizes ? req.body.sizes.trim() : '',
-        leadTimeBadge: req.body.leadTimeBadge ? req.body.leadTimeBadge.trim() : '',
-        isVisible: req.body.isVisible !== 'false' && req.body.isVisible !== false,
-        customTextEnabled: req.body.customTextEnabled === 'true' || req.body.customTextEnabled === true,
-        images: imagePaths,
-        colors: colors.length > 0 ? colors : [{ name: "Default", hex: "#f97316" }]
-    };
-    
-    data.products.push(newProduct);
-    await saveSettings(data);
-    res.redirect('/z-vorm-manage-7842.html');
-});
-
-app.post('/api/admin/products/update/:id', uploadProductImages.array('images', 5), async (req, res) => {
-    const data = await getSettings();
-    const product = data.products.find(p => p.id == req.params.id);
-
-    if (product) {
-        product.name = req.body.name || product.name;
-        product.price = parseFloat(req.body.price) || product.price;
-        product.description = req.body.description || product.description || '';
-        product.category = req.body.category || product.category || 'Shop';
-        product.sizes = req.body.sizes !== undefined ? req.body.sizes.trim() : (product.sizes || '');
-        product.leadTimeBadge = req.body.leadTimeBadge !== undefined ? req.body.leadTimeBadge.trim() : (product.leadTimeBadge || '');
-        
-        if (req.body.isVisible !== undefined) {
-            product.isVisible = req.body.isVisible !== 'false' && req.body.isVisible !== false;
-        }
-
-        product.customTextEnabled = req.body.customTextEnabled === 'true' || req.body.customTextEnabled === true;
-        
-        let existingImages = [];
-        if (req.body.imageOrderJson) {
-            try {
-                existingImages = JSON.parse(req.body.imageOrderJson);
-            } catch(e) {
-                existingImages = product.images || [];
-            }
-        } else {
-            existingImages = product.images || [];
-        }
-
-        const newUploadedImages = req.files && req.files.length > 0 
+    try {
+        const data = await getSettings();
+        const imagePaths = req.files && req.files.length > 0 
             ? req.files.map(f => f.path) 
-            : [];
+            : ['/uploads/default.jpg'];
 
-        product.images = [...existingImages, ...newUploadedImages];
-        if (product.images.length === 0) product.images = ['/uploads/default.jpg'];
-
+        let colors = [];
         if (req.body.colorNames && req.body.colorHexes) {
             const names = Array.isArray(req.body.colorNames) ? req.body.colorNames : [req.body.colorNames];
             const hexes = Array.isArray(req.body.colorHexes) ? req.body.colorHexes : [req.body.colorHexes];
-            product.colors = names.map((n, i) => ({ name: n, hex: hexes[i] || '#f97316' }));
+            colors = names.map((n, i) => ({ name: n, hex: hexes[i] || '#f97316' }));
         }
 
+        const newProduct = {
+            id: Date.now(),
+            name: req.body.name,
+            price: parseFloat(req.body.price),
+            description: req.body.description || '',
+            category: req.body.category || 'Shop',
+            sizes: req.body.sizes ? req.body.sizes.trim() : '',
+            leadTimeBadge: req.body.leadTimeBadge ? req.body.leadTimeBadge.trim() : '',
+            isVisible: req.body.isVisible !== 'false' && req.body.isVisible !== false,
+            customTextEnabled: req.body.customTextEnabled === 'true' || req.body.customTextEnabled === true,
+            images: imagePaths,
+            colors: colors.length > 0 ? colors : [{ name: "Default", hex: "#f97316" }]
+        };
+        
+        data.products.push(newProduct);
         await saveSettings(data);
+        res.redirect('/z-vorm-manage-7842.html');
+    } catch (err) {
+        console.error("Error creating product:", err);
+        res.status(500).send("Internal Server Error during product creation.");
     }
-    res.redirect('/z-vorm-manage-7842.html');
+});
+
+app.post('/api/admin/products/update/:id', uploadProductImages.array('images', 5), async (req, res) => {
+    try {
+        const data = await getSettings();
+        const product = data.products.find(p => p.id == req.params.id);
+
+        if (product) {
+            product.name = req.body.name || product.name;
+            product.price = parseFloat(req.body.price) || product.price;
+            product.description = req.body.description || product.description || '';
+            product.category = req.body.category || product.category || 'Shop';
+            product.sizes = req.body.sizes !== undefined ? req.body.sizes.trim() : (product.sizes || '');
+            product.leadTimeBadge = req.body.leadTimeBadge !== undefined ? req.body.leadTimeBadge.trim() : (product.leadTimeBadge || '');
+            
+            if (req.body.isVisible !== undefined) {
+                product.isVisible = req.body.isVisible !== 'false' && req.body.isVisible !== false;
+            }
+
+            product.customTextEnabled = req.body.customTextEnabled === 'true' || req.body.customTextEnabled === true;
+            
+            let existingImages = [];
+            if (req.body.existingImages) {
+                existingImages = Array.isArray(req.body.existingImages) ? req.body.existingImages : [req.body.existingImages];
+            } else if (req.body.imageOrderJson) {
+                try {
+                    existingImages = JSON.parse(req.body.imageOrderJson);
+                } catch(e) {
+                    existingImages = product.images || [];
+                }
+            }
+
+            const newUploadedImages = req.files && req.files.length > 0 
+                ? req.files.map(f => f.path) 
+                : [];
+
+            product.images = [...existingImages, ...newUploadedImages];
+            if (product.images.length === 0) product.images = ['/uploads/default.jpg'];
+
+            if (req.body.colorNames && req.body.colorHexes) {
+                const names = Array.isArray(req.body.colorNames) ? req.body.colorNames : [req.body.colorNames];
+                const hexes = Array.isArray(req.body.colorHexes) ? req.body.colorHexes : [req.body.colorHexes];
+                product.colors = names.map((n, i) => ({ name: n, hex: hexes[i] || '#f97316' }));
+            }
+
+            await saveSettings(data);
+        }
+        res.redirect('/z-vorm-manage-7842.html');
+    } catch (err) {
+        console.error("Error updating product:", err);
+        res.status(500).send("Internal Server Error during product update.");
+    }
 });
 
 app.delete('/api/admin/products/:id', async (req, res) => {
