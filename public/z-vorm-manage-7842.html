@@ -3,117 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Z-Vorm | Admin Control Panel</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <title>Z-Vorm | Master Command Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <style>
+        :root {
+            --primary: #f97316;
+            --primary-hover: #ea580c;
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Montserrat', sans-serif; }
+        body { background: var(--bg-main); color: var(--text-main); padding: 2rem; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; background: var(--bg-card); padding: 1.5rem 2rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
+        header h1 { font-size: 1.5rem; font-weight: 800; color: var(--text-main); }
+        header a { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+
+        .tabs { display: flex; gap: 0.8rem; margin-bottom: 2rem; flex-wrap: wrap; }
+        .tab-btn { background: var(--bg-card); border: 1px solid var(--border); padding: 0.8rem 1.2rem; border-radius: 8px; font-weight: 700; cursor: pointer; color: var(--text-muted); transition: all 0.2s; font-size: 0.9rem; }
+        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .panel { display: none; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); margin-bottom: 2rem; }
+        .panel.active { display: block; }
+
+        h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--text-main); }
+        
+        form { display: flex; flex-direction: column; gap: 1.2rem; }
+        .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.2rem; }
+        
+        label { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); display: block; margin-bottom: 0.4rem; }
+        input, textarea, select { width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border); background: #f8fafc; font-size: 0.95rem; color: var(--text-main); outline: none; }
+        input:focus, textarea:focus { border-color: var(--primary); background: white; }
+
+        button.btn-primary { background: var(--primary); color: white; border: none; padding: 0.9rem 1.5rem; border-radius: 8px; font-weight: 700; cursor: pointer; transition: background 0.2s; align-self: flex-start; }
+        button.btn-primary:hover { background: var(--primary-hover); }
+
+        .item-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
+        .item-card { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 1.2rem; display: flex; flex-direction: column; justify-content: space-between; }
+        .item-card h4 { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.3rem; }
+        .item-card p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; }
+        
+        .btn-group { display: flex; gap: 0.5rem; margin-top: auto; }
+        .btn-danger { background: #ef4444; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.8rem; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-secondary { background: #3b82f6; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.8rem; }
+        .btn-secondary:hover { background: #2563eb; }
+
+        /* Infrastructure Grid */
+        .infra-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; }
+        .infra-card { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.8rem; }
+        .status-badge { display: inline-block; padding: 0.25rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; width: fit-content; }
+        .status-online { background: #dcfce7; color: #166534; }
+        .status-action { background: #e0f2fe; color: #0369a1; }
+    </style>
 </head>
-<body style="background: var(--bg-card); padding: 3rem 5%;">
-    <div style="max-width: 950px; margin: 0 auto;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-            <h1>Z-Vorm Admin Panel</h1>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Z-Vorm Master Command Center</h1>
             <div style="display: flex; gap: 1.5rem; align-items: center;">
-                <a href="/z-vorm-manage-reset" style="color: #64748b; font-size: 0.9rem; text-decoration: none; font-weight: 600;">Reset Rate Limit</a>
-                <a href="/" style="color: var(--primary); text-decoration: none; font-weight: 600;">← Back to Website</a>
+                <a href="/z-vorm-manage-reset" style="color: #64748b;">Reset Rate Limit</a>
+                <a href="/" target="_blank">View Live Website →</a>
             </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('products', this)">Catalog Products</button>
+            <button class="tab-btn" onclick="switchTab('materials', this)">Materials & Pricing</button>
+            <button class="tab-btn" onclick="switchTab('calculator', this)">Calculator</button>
+            <button class="tab-btn" onclick="switchTab('orders', this)">Orders & Inquiries</button>
+            <button class="tab-btn" onclick="switchTab('infra', this)">Infrastructure & Status</button>
         </div>
 
-        <!-- Section 1: Calculator Expenses -->
-        <div style="background: white; padding: 2rem; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 2rem;">
-            <h2>B2B Calculator Expenses & Margins</h2>
-            <form id="settings-form" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem;">
-                <div>
-                    <label style="font-weight: 600; font-size: 0.9rem;">Electricity Cost (€ / kWh)</label>
-                    <input type="number" step="0.01" id="kwhCost" style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border); margin-top: 0.3rem;">
-                </div>
-                <div>
-                    <label style="font-weight: 600; font-size: 0.9rem;">Printer Power (Watts)</label>
-                    <input type="number" id="watts" style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border); margin-top: 0.3rem;">
-                </div>
-                <div>
-                    <label style="font-weight: 600; font-size: 0.9rem;">Profit Margin (e.g. 0.30 for 30%)</label>
-                    <input type="number" step="0.05" id="margin" style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border); margin-top: 0.3rem;">
+        <!-- Products Panel -->
+        <div id="panel-products" class="panel active">
+            <h2 id="product-form-title">Add New Catalog Product</h2>
+            <form id="product-form" action="/api/admin/products" method="POST" enctype="multipart/form-data">
+                <div class="form-grid">
+                    <div>
+                        <label>Product Name</label>
+                        <input type="text" id="prod-name" name="name" required placeholder="e.g. VeloDock Wall Mount">
+                    </div>
+                    <div>
+                        <label>Price (€)</label>
+                        <input type="number" step="0.01" id="prod-price" name="price" required placeholder="34.99">
+                    </div>
                 </div>
                 <div>
-                    <label style="font-weight: 600; font-size: 0.9rem;">Base Shipping (€)</label>
-                    <input type="number" step="0.50" id="shipping" style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border); margin-top: 0.3rem;">
+                    <label>Description</label>
+                    <textarea id="prod-desc" name="description" rows="3" placeholder="Detailed product specifications..."></textarea>
                 </div>
-                <div style="grid-column: span 2;">
-                    <button type="submit" style="background: var(--primary); color: white; padding: 0.8rem 2rem; border-radius: 8px; border: none; cursor: pointer; font-weight: 600;">Save Calculator Settings</button>
-                </div>
-            </form>
-        </div>
-
-        <!-- Section 2: Materials & Color Palettes -->
-        <div style="background: white; padding: 2rem; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 2rem;">
-            <h2>B2B Materials & Usage Recommendations</h2>
-            <form action="/api/admin/materials" method="POST" style="background: var(--bg-card); padding: 1.5rem; border-radius: 8px; margin-top: 1.5rem;">
-                <div style="display: grid; grid-template-columns: 2fr 1fr 2fr; gap: 1rem; margin-bottom: 1rem;">
+                <div class="form-grid">
                     <div>
-                        <label style="font-weight: 600; font-size: 0.85rem;">Material Name</label>
-                        <input type="text" name="name" required placeholder="PLA / PLA-PHA" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--border);">
+                        <label>Sizes (comma separated)</label>
+                        <input type="text" id="prod-sizes" name="sizes" placeholder="Standard, XL">
                     </div>
                     <div>
-                        <label style="font-weight: 600; font-size: 0.85rem;">Price (€ / kg)</label>
-                        <input type="number" step="0.50" name="pricePerKg" required placeholder="20.00" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--border);">
-                    </div>
-                    <div>
-                        <label style="font-weight: 600; font-size: 0.85rem;">Usage / Recommendation</label>
-                        <input type="text" name="description" placeholder="General prototypes & visual models." style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--border);">
+                        <label>Lead Time Badge</label>
+                        <input type="text" id="prod-badge" name="leadTimeBadge" placeholder="In Stock - Dispatched in 48h">
                     </div>
                 </div>
-                <div style="margin-bottom: 1rem;">
-                    <label style="font-weight: 600; font-size: 0.85rem; display: block; margin-bottom: 0.5rem;">Color Palette Options</label>
-                    <div id="color-inputs-container" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
-                        <div style="display: flex; gap: 0.5rem; align-items: center; background: white; padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid var(--border);">
-                            <input type="color" name="colorHexes" value="#111111" style="width: 30px; height: 30px; border: none; cursor: pointer;">
-                            <input type="text" name="colorNames" placeholder="Matte Black" required style="padding: 0.3rem; border: 1px solid var(--border); border-radius: 4px; width: 110px;">
-                        </div>
-                    </div>
-                    <button type="button" onclick="addColorInput()" style="margin-top: 0.5rem; background: var(--border); border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600;">+ Add Color Swatch</button>
-                </div>
-                <button type="submit" style="background: var(--text-main); color: white; padding: 0.7rem 1.5rem; border-radius: 6px; border: none; cursor: pointer; font-weight: 600;">Add Material</button>
-            </form>
-            <div id="material-list" style="margin-top: 1.5rem;"></div>
-        </div>
-
-        <!-- Section 3: Shop Catalog Management -->
-        <div style="background: white; padding: 2rem; border-radius: 12px; border: 1px solid var(--border);">
-            <h2>Shop Catalog Management</h2>
-            <form action="/api/admin/products" method="POST" enctype="multipart/form-data" style="background: var(--bg-card); padding: 1.5rem; border-radius: 8px; margin-top: 1.5rem; display: grid; gap: 1rem;">
-                <div style="display: grid; grid-template-columns: 2fr 1fr 2fr; gap: 1rem;">
+                <div class="form-grid">
                     <div>
-                        <label style="font-weight: 600; font-size: 0.85rem;">Product Name</label>
-                        <input type="text" name="name" required placeholder="VeloDock Pro" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--border);">
+                        <label>Product Images (up to 5)</label>
+                        <input type="file" name="images" multiple accept="image/*">
                     </div>
                     <div>
-                        <label style="font-weight: 600; font-size: 0.85rem;">Price (€)</label>
-                        <input type="number" step="0.01" name="price" required placeholder="34.99" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--border);">
+                        <label>Custom Engraving / Text Enabled</label>
+                        <select id="prod-custom" name="customTextEnabled">
+                            <option value="false">Disabled</option>
+                            <option value="true">Enabled</option>
+                        </select>
                     </div>
-                    <div>
-                        <label style="font-weight: 600; font-size: 0.85rem;">Description</label>
-                        <input type="text" name="description" placeholder="Brief product features..." style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--border);">
-                    </div>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div>
-                        <label style="font-weight: 600; font-size: 0.85rem;">Sizes (comma-separated)</label>
-                        <input type="text" name="sizes" placeholder="Standard, XL" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--border);">
-                    </div>
-                    <div>
-                        <label style="font-weight: 600; font-size: 0.85rem;">Stock Lead Time Badge</label>
-                        <input type="text" name="leadTimeBadge" placeholder="In Stock - Dispatched in 48h" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--border);">
-                    </div>
-                </div>
-
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <input type="checkbox" name="customTextEnabled" value="true" id="add-custom-text" style="width: 18px; height: 18px;">
-                    <label for="add-custom-text" style="font-weight: 600; font-size: 0.85rem;">Enable Custom Text / Engraving Field</label>
-                </div>
-
-                <div>
-                    <label style="font-weight: 600; font-size: 0.85rem;">Product Images (Select multiple)</label>
-                    <input type="file" name="images" accept="image/*" multiple required style="font-size: 0.85rem; width: 100%;">
                 </div>
                 <div>
                     <label style="font-weight: 600; font-size: 0.85rem; display: block; margin-bottom: 0.5rem;">Product Color Options</label>
@@ -125,153 +133,248 @@
                     </div>
                     <button type="button" onclick="addProductColorInput()" style="margin-top: 0.5rem; background: var(--border); border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600;">+ Add Color Swatch</button>
                 </div>
-                <input type="hidden" name="category" value="Shop">
-                <button type="submit" style="background: var(--text-main); color: white; padding: 0.7rem 1.5rem; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; justify-self: start;">Add Product</button>
+                <div style="display: flex; gap: 1rem;">
+                    <button type="submit" id="product-submit-btn" class="btn-primary">Add Product</button>
+                    <button type="button" id="product-cancel-btn" class="btn-secondary" style="display:none;" onclick="resetProductForm()">Cancel Edit</button>
+                </div>
             </form>
-            <div id="product-list" style="margin-top: 1.5rem;"></div>
-        </div>
-    </div>
 
-    <!-- Edit Product Modal -->
-    <div id="edit-product-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-        <div style="background: white; padding: 2.5rem; border-radius: 12px; width: 550px; max-width: 90%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); max-height: 90vh; overflow-y: auto;">
-            <h3 style="margin-bottom: 1.5rem;">Edit Product</h3>
-            <form id="edit-product-form" method="POST" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 1rem;">
-                <div>
-                    <label style="font-weight: 600; font-size: 0.85rem;">Product Name</label>
-                    <input type="text" id="edit-prod-name" name="name" required style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--border);">
-                </div>
-                <div>
-                    <label style="font-weight: 600; font-size: 0.85rem;">Price (€)</label>
-                    <input type="number" step="0.01" id="edit-prod-price" name="price" required style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--border);">
-                </div>
-                <div>
-                    <label style="font-weight: 600; font-size: 0.85rem;">Description</label>
-                    <textarea id="edit-prod-desc" name="description" rows="3" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--border); resize: vertical;"></textarea>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <h2 style="margin-top: 3rem;">Existing Catalog Products</h2>
+            <div id="admin-products-list" class="item-list"></div>
+        </div>
+
+        <!-- Materials Panel -->
+        <div id="panel-materials" class="panel">
+            <h2>Add / Configure Material</h2>
+            <form action="/api/admin/materials" method="POST">
+                <div class="form-grid">
                     <div>
-                        <label style="font-weight: 600; font-size: 0.85rem;">Sizes (comma-separated)</label>
-                        <input type="text" id="edit-prod-sizes" name="sizes" placeholder="Standard, XL" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--border);">
+                        <label>Material Name</label>
+                        <input type="text" name="name" required placeholder="PLA / Carbon PETG">
                     </div>
                     <div>
-                        <label style="font-weight: 600; font-size: 0.85rem;">Stock Lead Time Badge</label>
-                        <input type="text" id="edit-prod-leadtime" name="leadTimeBadge" placeholder="In Stock - Dispatched in 48h" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--border);">
+                        <label>Price per KG (€)</label>
+                        <input type="number" step="0.01" name="pricePerKg" required placeholder="25.00">
                     </div>
                 </div>
-
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <input type="checkbox" name="customTextEnabled" value="true" id="edit-prod-custom-text" style="width: 18px; height: 18px;">
-                    <label for="edit-prod-custom-text" style="font-weight: 600; font-size: 0.85rem;">Enable Custom Text / Engraving Field</label>
-                </div>
-
                 <div>
-                    <label style="font-weight: 600; font-size: 0.85rem;">Replace Images (Optional, select multiple)</label>
-                    <input type="file" name="images" accept="image/*" multiple style="font-size: 0.85rem; width: 100%;">
+                    <label>Description & Usage</label>
+                    <textarea name="description" rows="2" placeholder="Material properties and ideal use cases..."></textarea>
                 </div>
-                <div>
-                    <label style="font-weight: 600; font-size: 0.85rem; display: block; margin-bottom: 0.3rem;">Product Color Options</label>
-                    <div id="edit-product-color-container" style="display: flex; gap: 0.8rem; flex-wrap: wrap;"></div>
-                    <button type="button" onclick="addEditProductColorInput()" style="margin-top: 0.5rem; background: var(--border); border: none; padding: 0.3rem 0.6rem; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: 600;">+ Add Color Swatch</button>
+                <div style="margin-bottom: 1rem;">
+                    <label style="font-weight: 600; font-size: 0.85rem; display: block; margin-bottom: 0.5rem;">Color Palette Options</label>
+                    <div id="color-inputs-container" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+                        <div style="display: flex; gap: 0.5rem; align-items: center; background: white; padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid var(--border);">
+                            <input type="color" name="colorHexes" value="#111111" style="width: 30px; height: 30px; border: none; cursor: pointer;">
+                            <input type="text" name="colorNames" placeholder="Matte Black" required style="padding: 0.3rem; border: 1px solid var(--border); border-radius: 4px; width: 110px;">
+                        </div>
+                    </div>
+                    <button type="button" onclick="addColorInput()" style="margin-top: 0.5rem; background: var(--border); border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600;">+ Add Color Swatch</button>
                 </div>
-                <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-                    <button type="submit" style="background: var(--primary); color: white; padding: 0.7rem 1.5rem; border-radius: 6px; border: none; cursor: pointer; font-weight: 600;">Save Changes</button>
-                    <button type="button" onclick="closeEditProductModal()" style="background: var(--border); color: var(--text-main); padding: 0.7rem 1.5rem; border-radius: 6px; border: none; cursor: pointer; font-weight: 600;">Cancel</button>
+                <button type="submit" class="btn-primary">Save Material</button>
+            </form>
+
+            <h2 style="margin-top: 3rem;">Configured Materials</h2>
+            <div id="admin-materials-list" class="item-list"></div>
+        </div>
+
+        <!-- Calculator Settings Panel -->
+        <div id="panel-calculator" class="panel">
+            <h2>Production Calculator Settings</h2>
+            <form id="calculator-form" onsubmit="saveCalculatorSettings(event)">
+                <div class="form-grid">
+                    <div>
+                        <label>Power Cost per kWh (€)</label>
+                        <input type="number" step="0.01" id="calc-power" name="powerCostPerKWh" required>
+                    </div>
+                    <div>
+                        <label>Printer Average Wattage (W)</label>
+                        <input type="number" id="calc-wattage" name="printerWattage" required>
+                    </div>
                 </div>
+                <div class="form-grid">
+                    <div>
+                        <label>Profit Margin (decimal, e.g. 0.30)</label>
+                        <input type="number" step="0.05" id="calc-margin" name="profitMargin" required>
+                    </div>
+                    <div>
+                        <label>Base Shipping Cost (€)</label>
+                        <input type="number" step="0.01" id="calc-shipping" name="baseShipping" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary">Update Calculator Settings</button>
             </form>
         </div>
-    </div>
 
-    <!-- Edit Material Modal -->
-    <div id="edit-mat-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-        <div style="background: white; padding: 2.5rem; border-radius: 12px; width: 500px; max-width: 90%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
-            <h3 style="margin-bottom: 1.5rem;">Edit Material</h3>
-            <form id="edit-mat-form" method="POST" style="display: flex; flex-direction: column; gap: 1rem;">
-                <div>
-                    <label style="font-weight: 600; font-size: 0.85rem;">Material Name</label>
-                    <input type="text" id="edit-mat-name" name="name" required style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--border);">
+        <!-- Orders & Inquiries Panel -->
+        <div id="panel-orders" class="panel">
+            <h2>Recent Orders & Project Inquiries</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Live contact form submissions and quote requests.</p>
+            <div id="admin-orders-list" class="item-list">
+                <div class="item-card">
+                    <h4>Sample Inquiry: John Doe</h4>
+                    <p><strong>Subject:</strong> Custom 3D Printing Quote<br><strong>Email:</strong> john@example.com<br><strong>Message:</strong> Looking for a batch of 50 durable brackets in PETG.</p>
                 </div>
-                <div>
-                    <label style="font-weight: 600; font-size: 0.85rem;">Price (€ / kg)</label>
-                    <input type="number" step="0.50" id="edit-mat-price" name="pricePerKg" required style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--border);">
+            </div>
+        </div>
+
+        <!-- Infrastructure & Status Panel -->
+        <div id="panel-infra" class="panel">
+            <h2>Infrastructure & Service Status</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Quick operational overview and management shortcuts.</p>
+            
+            <div class="infra-grid">
+                <div class="infra-card">
+                    <h4>Render Deployment</h4>
+                    <span class="status-badge status-online">Operational</span>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">Web application hosting and server runtime.</p>
+                    <a href="https://dashboard.render.com" target="_blank" class="btn-secondary" style="text-align: center; text-decoration: none; margin-top: auto;">Open Render Dashboard →</a>
                 </div>
-                <div>
-                    <label style="font-weight: 600; font-size: 0.85rem;">Usage / Recommendation</label>
-                    <textarea id="edit-mat-desc" name="description" rows="2" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--border); resize: vertical;"></textarea>
+
+                <div class="infra-card">
+                    <h4>GitHub Repository</h4>
+                    <span class="status-badge status-online">Synced</span>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">Source code control & automatic settings persistence.</p>
+                    <a href="https://github.com/JUAL93/Z-Vorm" target="_blank" class="btn-secondary" style="text-align: center; text-decoration: none; margin-top: auto;">Open GitHub Repo →</a>
                 </div>
-                <div>
-                    <label style="font-weight: 600; font-size: 0.85rem; display: block; margin-bottom: 0.3rem;">Color Palette Options</label>
-                    <div id="edit-color-inputs-container" style="display: flex; gap: 0.8rem; flex-wrap: wrap;"></div>
-                    <button type="button" onclick="addEditColorInput()" style="margin-top: 0.5rem; background: var(--border); border: none; padding: 0.3rem 0.6rem; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: 600;">+ Add Color Swatch</button>
+
+                <div class="infra-card">
+                    <h4>Zettlab D4 NAS (ZettOS)</h4>
+                    <span class="status-badge status-action">Local Storage</span>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">Primary media backups, CAD archives, and local backups.</p>
+                    <a href="#" onclick="alert('Access your Zettlab NAS via local network IP or VPN gateway.'); return false;" class="btn-secondary" style="text-align: center; text-decoration: none; margin-top: auto;">NAS Management →</a>
                 </div>
-                <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-                    <button type="submit" style="background: var(--primary); color: white; padding: 0.7rem 1.5rem; border-radius: 6px; border: none; cursor: pointer; font-weight: 600;">Save Changes</button>
-                    <button type="button" onclick="closeEditMatModal()" style="background: var(--border); color: var(--text-main); padding: 0.7rem 1.5rem; border-radius: 6px; border: none; cursor: pointer; font-weight: 600;">Cancel</button>
+
+                <div class="infra-card">
+                    <h4>Mollie Payments</h4>
+                    <span class="status-badge status-online">API Connected</span>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">EU payment gateway (Bancontact, iDEAL, Credit Card).</p>
+                    <a href="https://www.mollie.com/dashboard" target="_blank" class="btn-secondary" style="text-align: center; text-decoration: none; margin-top: auto;">Open Mollie Dashboard →</a>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 
     <script>
-        let currentProducts = [];
-        let currentMaterials = [];
+        let cachedProducts = [];
+        let cachedMaterials = [];
+
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('panel-' + tabId).classList.add('active');
+            btn.classList.add('active');
+        }
 
         async function loadAdminData() {
-            const res = await fetch('/api/admin/data');
-            const data = await res.json();
-            currentProducts = data.products || [];
-            currentMaterials = data.materials || [];
-            
-            document.getElementById('kwhCost').value = data.calculator.powerCostPerKWh;
-            document.getElementById('watts').value = data.calculator.printerWattage;
-            document.getElementById('margin').value = data.calculator.profitMargin;
-            document.getElementById('shipping').value = data.calculator.baseShipping;
+            try {
+                const res = await fetch('/api/admin/data');
+                const data = await res.json();
+                cachedProducts = data.products || [];
+                cachedMaterials = data.materials || [];
+                
+                if (data.calculator) {
+                    document.getElementById('calc-power').value = data.calculator.powerCostPerKWh;
+                    document.getElementById('calc-wattage').value = data.calculator.printerWattage;
+                    document.getElementById('calc-margin').value = data.calculator.profitMargin;
+                    document.getElementById('calc-shipping').value = data.calculator.baseShipping;
+                }
 
-            const matListEl = document.getElementById('material-list');
-            matListEl.innerHTML = currentMaterials.map(m => `
-                <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; border-bottom: 1px solid var(--border);">
-                    <div>
-                        <strong>${m.name}</strong> (€${m.pricePerKg.toFixed(2)}/kg)
-                        <div style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">"${m.description || ''}"</div>
-                        <div style="display: flex; gap: 0.4rem; margin-top: 0.4rem; align-items: center;">
-                            ${m.colors ? m.colors.map(c => `<span title="${c.name}" style="background: ${c.hex}; width: 16px; height: 16px; border-radius: 50%; display: inline-block; border: 1px solid #ccc;"></span>`).join('') : ''}
+                // Render Products List
+                const prodList = document.getElementById('admin-products-list');
+                prodList.innerHTML = cachedProducts.map(p => `
+                    <div class="item-card">
+                        <div>
+                            <h4>${p.name}</h4>
+                            <p>€${p.price.toFixed(2)} | ${p.category || 'Shop'}</p>
+                        </div>
+                        <div class="btn-group" style="margin-top: 1rem;">
+                            <button class="btn-secondary" onclick="editProduct('${p.id}')">Edit</button>
+                            <button class="btn-danger" onclick="deleteProduct('${p.id}')">Delete</button>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <button onclick="openEditMatModal('${m.id}')" style="background: var(--text-main); color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">Edit</button>
-                        <button onclick="deleteMaterial('${m.id}')" style="background: #ef4444; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">Delete</button>
-                    </div>
-                </div>
-            `).join('');
+                `).join('');
 
-            const listEl = document.getElementById('product-list');
-            listEl.innerHTML = currentProducts.map(p => {
-                const thumb = (p.images && p.images.length > 0) ? p.images[0] : (p.image || '/uploads/default.jpg');
-                const imageCount = p.images ? p.images.length : (p.image ? 1 : 0);
-                return `
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; border-bottom: 1px solid var(--border);">
-                        <div style="display: flex; align-items: center; gap: 1rem;">
-                            <img src="${thumb}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border);">
-                            <div>
-                                <strong>${p.name}</strong>
-                                <div style="color: var(--primary); font-weight: 600; font-size: 0.9rem;">€${p.price.toFixed(2)} <span style="color: var(--text-muted); font-weight: 400; font-size: 0.8rem;">(${imageCount} images)</span></div>
-                                <div style="color: var(--text-muted); font-size: 0.8rem; max-width: 350px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.description || 'No description provided.'}</div>
-                                <div style="font-size: 0.75rem; color: #0284c7; margin-top: 0.2rem;">
-                                    ${p.leadTimeBadge ? `Badge: ${p.leadTimeBadge}` : ''} ${p.sizes ? `| Sizes: ${p.sizes}` : ''} ${p.customTextEnabled ? '| Custom Text Enabled' : ''}
-                                </div>
-                                <div style="display: flex; gap: 0.4rem; margin-top: 0.3rem; align-items: center;">
-                                    ${p.colors ? p.colors.map(c => `<span title="${c.name}" style="background: ${c.hex}; width: 14px; height: 14px; border-radius: 50%; display: inline-block; border: 1px solid #ccc;"></span>`).join('') : ''}
-                                </div>
-                            </div>
+                // Render Materials List
+                const matList = document.getElementById('admin-materials-list');
+                matList.innerHTML = cachedMaterials.map(m => `
+                    <div class="item-card">
+                        <div>
+                            <h4>${m.name}</h4>
+                            <p>€${m.pricePerKg.toFixed(2)} / kg</p>
                         </div>
-                        <div style="display: flex; gap: 0.5rem;">
-                            <button onclick="openEditProductModal(${p.id})" style="background: var(--text-main); color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">Edit</button>
-                            <button onclick="deleteProduct(${p.id})" style="background: #ef4444; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">Delete</button>
+                        <div class="btn-group" style="margin-top: 1rem;">
+                            <button class="btn-secondary" onclick="editMaterial('${m.id}')">Edit</button>
+                            <button class="btn-danger" onclick="deleteMaterial('${m.id}')">Delete</button>
                         </div>
                     </div>
-                `;
-            }).join('');
+                `).join('');
+            } catch (err) {
+                console.error('Failed to load admin data:', err);
+            }
+        }
+
+        function editProduct(id) {
+            const p = cachedProducts.find(item => item.id == id);
+            if (!p) return;
+
+            document.getElementById('product-form-title').innerText = `Edit Product: ${p.name}`;
+            document.getElementById('product-form').action = `/api/admin/products/update/${p.id}`;
+            document.getElementById('prod-name').value = p.name;
+            document.getElementById('prod-price').value = p.price;
+            document.getElementById('prod-desc').value = p.description || '';
+            document.getElementById('prod-sizes').value = p.sizes || '';
+            document.getElementById('prod-badge').value = p.leadTimeBadge || '';
+            document.getElementById('prod-custom').value = p.customTextEnabled ? 'true' : 'false';
+            document.getElementById('product-submit-btn').innerText = 'Save Changes';
+            document.getElementById('product-cancel-btn').style.display = 'block';
+
+            switchTab('products', document.querySelector('.tab-btn'));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetProductForm() {
+            document.getElementById('product-form-title').innerText = 'Add New Catalog Product';
+            document.getElementById('product-form').action = '/api/admin/products';
+            document.getElementById('product-form').reset();
+            document.getElementById('product-submit-btn').innerText = 'Add Product';
+            document.getElementById('product-cancel-btn').style.display = 'none';
+        }
+
+        function editMaterial(id) {
+            const m = cachedMaterials.find(item => item.id == id);
+            if (!m) return;
+            alert(`Edit material feature for "${m.name}" selected. You can update pricing or re-add via form.`);
+        }
+
+        async function deleteProduct(id) {
+            if (!confirm('Are you sure you want to delete this product?')) return;
+            await fetch(`/api/admin/products/${id}`, { method: 'DELETE' });
+            loadAdminData();
+        }
+
+        async function deleteMaterial(id) {
+            if (!confirm('Are you sure you want to delete this material?')) return;
+            await fetch(`/api/admin/materials/${id}`, { method: 'DELETE' });
+            loadAdminData();
+        }
+
+        async function saveCalculatorSettings(e) {
+            e.preventDefault();
+            const body = {
+                powerCostPerKWh: parseFloat(document.getElementById('calc-power').value),
+                printerWattage: parseFloat(document.getElementById('calc-wattage').value),
+                profitMargin: parseFloat(document.getElementById('calc-margin').value),
+                baseShipping: parseFloat(document.getElementById('calc-shipping').value)
+            };
+            const res = await fetch('/api/admin/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const result = await res.json();
+            alert(result.message || 'Settings updated successfully!');
+            loadAdminData();
         }
 
         function addColorInput() {
@@ -298,124 +401,7 @@
             container.appendChild(div);
         }
 
-        function openEditProductModal(id) {
-            const product = currentProducts.find(p => p.id == id);
-            if (!product) return;
-
-            document.getElementById('edit-prod-name').value = product.name;
-            document.getElementById('edit-prod-price').value = product.price;
-            document.getElementById('edit-prod-desc').value = product.description || '';
-            document.getElementById('edit-prod-sizes').value = product.sizes || '';
-            document.getElementById('edit-prod-leadtime').value = product.leadTimeBadge || '';
-            document.getElementById('edit-prod-custom-text').checked = !!product.customTextEnabled;
-            document.getElementById('edit-product-form').action = `/api/admin/products/update/${product.id}`;
-
-            const container = document.getElementById('edit-product-color-container');
-            container.innerHTML = '';
-            if (product.colors && product.colors.length > 0) {
-                product.colors.forEach(c => {
-                    const div = document.createElement('div');
-                    div.style.cssText = "display: flex; gap: 0.5rem; align-items: center; background: var(--bg-card); padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--border);";
-                    div.innerHTML = `
-                        <input type="color" name="colorHexes" value="${c.hex}" style="width: 25px; height: 25px; border: none; cursor: pointer;">
-                        <input type="text" name="colorNames" value="${c.name}" required style="padding: 0.2rem; border: 1px solid var(--border); border-radius: 4px; width: 100px;">
-                        <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: red; cursor: pointer; font-weight: bold;">×</button>
-                    `;
-                    container.appendChild(div);
-                });
-            }
-
-            document.getElementById('edit-product-modal').style.display = 'flex';
-        }
-
-        function addEditProductColorInput() {
-            const container = document.getElementById('edit-product-color-container');
-            const div = document.createElement('div');
-            div.style.cssText = "display: flex; gap: 0.5rem; align-items: center; background: var(--bg-card); padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--border);";
-            div.innerHTML = `
-                <input type="color" name="colorHexes" value="#f97316" style="width: 25px; height: 25px; border: none; cursor: pointer;">
-                <input type="text" name="colorNames" placeholder="Color Name" required style="padding: 0.2rem; border: 1px solid var(--border); border-radius: 4px; width: 100px;">
-                <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: red; cursor: pointer; font-weight: bold;">×</button>
-            `;
-            container.appendChild(div);
-        }
-
-        function closeEditProductModal() {
-            document.getElementById('edit-product-modal').style.display = 'none';
-        }
-
-        function openEditMatModal(id) {
-            const mat = currentMaterials.find(m => m.id == id);
-            if (!mat) return;
-
-            document.getElementById('edit-mat-name').value = mat.name;
-            document.getElementById('edit-mat-price').value = mat.pricePerKg;
-            document.getElementById('edit-mat-desc').value = mat.description || '';
-            document.getElementById('edit-mat-form').action = `/api/admin/materials/update/${mat.id}`;
-
-            const container = document.getElementById('edit-color-inputs-container');
-            container.innerHTML = '';
-            if (mat.colors && mat.colors.length > 0) {
-                mat.colors.forEach(c => {
-                    const div = document.createElement('div');
-                    div.style.cssText = "display: flex; gap: 0.5rem; align-items: center; background: var(--bg-card); padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--border);";
-                    div.innerHTML = `
-                        <input type="color" name="colorHexes" value="${c.hex}" style="width: 25px; height: 25px; border: none; cursor: pointer;">
-                        <input type="text" name="colorNames" value="${c.name}" required style="padding: 0.2rem; border: 1px solid var(--border); border-radius: 4px; width: 100px;">
-                        <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: red; cursor: pointer; font-weight: bold;">×</button>
-                    `;
-                    container.appendChild(div);
-                });
-            }
-
-            document.getElementById('edit-mat-modal').style.display = 'flex';
-        }
-
-        function addEditColorInput() {
-            const container = document.getElementById('edit-color-inputs-container');
-            const div = document.createElement('div');
-            div.style.cssText = "display: flex; gap: 0.5rem; align-items: center; background: var(--bg-card); padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--border);";
-            div.innerHTML = `
-                <input type="color" name="colorHexes" value="#f97316" style="width: 25px; height: 25px; border: none; cursor: pointer;">
-                <input type="text" name="colorNames" placeholder="Color Name" required style="padding: 0.2rem; border: 1px solid var(--border); border-radius: 4px; width: 100px;">
-                <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; color: red; cursor: pointer; font-weight: bold;">×</button>
-            `;
-            container.appendChild(div);
-        }
-
-        function closeEditMatModal() {
-            document.getElementById('edit-mat-modal').style.display = 'none';
-        }
-
-        document.getElementById('settings-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const payload = {
-                powerCostPerKWh: parseFloat(document.getElementById('kwhCost').value),
-                printerWattage: parseInt(document.getElementById('watts').value),
-                profitMargin: parseFloat(document.getElementById('margin').value),
-                baseShipping: parseFloat(document.getElementById('shipping').value)
-            };
-            const res = await fetch('/api/admin/settings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if (res.ok) alert('Settings updated successfully!');
-        });
-
-        async function deleteMaterial(id) {
-            if (!confirm('Delete material?')) return;
-            const res = await fetch(`/api/admin/materials/${id}`, { method: 'DELETE' });
-            if (res.ok) loadAdminData();
-        }
-
-        async function deleteProduct(id) {
-            if (!confirm('Are you sure you want to delete this product?')) return;
-            const res = await fetch(`/api/admin/products/${id}`, { method: 'DELETE' });
-            if (res.ok) loadAdminData();
-        }
-
-        loadAdminData();
+        document.addEventListener('DOMContentLoaded', loadAdminData);
     </script>
 </body>
 </html>
