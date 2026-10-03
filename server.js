@@ -56,9 +56,10 @@ app.get('/z-vorm-manage-reset', (req, res) => {
     `);
 });
 
+// Strictly rely on environment variables for authentication
 app.use(['/z-vorm-manage-7842.html', '/api/admin'], adminLimiter, basicAuth({
     users: { 
-        [process.env.ADMIN_USER || 'admin']: process.env.ADMIN_PASS || 'zvormsecure2026' 
+        [process.env.ADMIN_USER]: process.env.ADMIN_PASS 
     },
     challenge: true,
     realm: 'Z-Vorm Admin Portal'
@@ -66,7 +67,7 @@ app.use(['/z-vorm-manage-7842.html', '/api/admin'], adminLimiter, basicAuth({
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Configure Cloudinary for persistent cloud image storage
+// Configure Cloudinary for persistent cloud image & raw file storage
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
@@ -126,6 +127,7 @@ async function initDB() {
             defaultData = {
                 calculator: { powerCostPerKWh: 0.20, printerWattage: 150, profitMargin: 0.30, baseShipping: 7.00 },
                 infrastructure: { renderUrl: "https://z-vorm.onrender.com", githubRepo: "JUAL93/Z-Vorm", nasIp: "192.168.1.150", mollieEndpoint: "https://api.mollie.com" },
+                categories: ["Shop", "Mounts", "Accessories", "Medals"], // Core dynamic categories setup
                 materials: [
                     { id: "pla", name: "PLA / PLA-PHA", pricePerKg: 20.00, description: "General prototypes.", colors: [{name: "Matte Black", hex: "#111111"}, {name: "Z-Vorm Orange", hex: "#f97316"}] }
                 ],
@@ -136,6 +138,9 @@ async function initDB() {
         }
         await settingsCollection.insertOne({ _id: 'site_settings', ...defaultData });
         console.log("Migration complete!");
+    } else if (!existing.categories) {
+        // Auto-patch old databases that lack the categories array
+        await settingsCollection.updateOne({ _id: 'site_settings' }, { $set: { categories: ["Shop", "Mounts", "Accessories", "Medals"] } });
     }
 }
 
@@ -157,7 +162,6 @@ async function saveSettings(data) {
 // Express API Routes (Async MongoDB Queries)
 // ----------------------------------------------------
 
-// Dedicated B2C Social Media Catalog Landing Page Route
 app.get('/shop', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'shop.html'));
 });
@@ -183,6 +187,7 @@ app.get('/api/settings', async (req, res) => {
 
     res.json({
         calculator: settings.calculator,
+        categories: settings.categories || ['Shop'], // Exposed category list for storefront filter bar
         materials: materialsWithDiff,
         products: publicProducts
     });
@@ -200,6 +205,28 @@ app.post('/api/admin/infrastructure', async (req, res) => {
     data.infrastructure = req.body;
     await saveSettings(data);
     res.json({ success: true, message: 'Infrastructure settings updated successfully' });
+});
+
+// --- Category Management Routes ---
+app.post('/api/admin/categories', async (req, res) => {
+    const data = await getSettings();
+    if (!data.categories) data.categories = ['Shop'];
+    
+    const newCat = req.body.category ? req.body.category.trim() : '';
+    if (newCat && !data.categories.includes(newCat)) {
+        data.categories.push(newCat);
+        await saveSettings(data);
+    }
+    res.redirect('/z-vorm-manage-7842.html');
+});
+
+app.delete('/api/admin/categories/:name', async (req, res) => {
+    const data = await getSettings();
+    if (data.categories) {
+        data.categories = data.categories.filter(c => c !== req.params.name);
+        await saveSettings(data);
+    }
+    res.json({ success: true });
 });
 
 app.post('/api/admin/products', uploadProductImages.array('images', 5), async (req, res) => {
@@ -470,7 +497,7 @@ app.post('/api/create-payment', async (req, res) => {
     }
 });
 
-// Mollie Webhook Endpoint
+// Mollie Webhook Endpoint with Automated Buyer Confirmation & BCC to contact@z-vorm.nl
 app.post('/api/mollie-webhook', async (req, res) => {
     const paymentId = req.body.id;
     try {
@@ -479,11 +506,39 @@ app.post('/api/mollie-webhook', async (req, res) => {
 
         if (payment.isPaid()) {
             console.log(`Payment ${paymentId} for order ${orderId} was successfully paid!`);
+            
+            const shippingDetails = payment.metadata && payment.metadata.shippingDetails ? payment.metadata.shippingDetails : {};
+            const customerEmail = shippingDetails.email;
+            const customerName = `${shippingDetails.firstName || ''} ${shippingDetails.lastName || ''}`.trim() || 'Customer';
+            const cartItems = payment.metadata && payment.metadata.cartItems ? payment.metadata.cartItems : [];
+
             if (ordersCollection && orderId) {
                 await ordersCollection.updateOne(
                     { id: orderId },
                     { $set: { status: 'Paid' } }
                 );
+            }
+
+            // Dispatch automated order confirmation via Resend with BCC to contact@z-vorm.nl
+            if (process.env.RESEND_API_KEY && customerEmail) {
+                try {
+                    const resend = new Resend(process.env.RESEND_API_KEY);
+                    
+                    const itemsListText = cartItems.map(item => 
+                        `- ${item.qty}x ${item.name} (${item.color !== 'Standard' ? item.color : ''} ${item.size ? '/ ' + item.size : ''}) : €${(item.price * item.qty).toFixed(2)}`
+                    ).join('\n');
+
+                    await resend.emails.send({
+                        from: 'Z-Vorm Admin <admin@z-vorm.nl>',
+                        to: customerEmail,
+                        bcc: 'contact@z-vorm.nl',
+                        subject: `Order Confirmation — Z-Vorm (${orderId})`,
+                        text: `Hi ${customerName},\n\nThank you for your order! We have received your payment and are preparing your items in our workshop.\n\nOrder Reference: ${orderId}\n\nShipping Address:\n${shippingDetails.street || ''}, ${shippingDetails.postalCode || ''} ${shippingDetails.city || ''} (${shippingDetails.country || ''})\n\nItems Ordered:\n${itemsListText}\n\nWe will notify you once your order is dispatched.\n\nBest regards,\nThe Z-Vorm Team\nhttps://z-vorm.nl`
+                    });
+                    console.log(`Order confirmation email successfully dispatched to ${customerEmail} (BCC: contact@z-vorm.nl)`);
+                } catch (emailErr) {
+                    console.error('Failed to send order confirmation email:', emailErr.message);
+                }
             }
         } else if (payment.isCanceled() || payment.isExpired()) {
             console.log(`Payment ${paymentId} was canceled or expired.`);
@@ -502,22 +557,45 @@ app.post('/api/mollie-webhook', async (req, res) => {
 });
 
 // ----------------------------------------------------
-// Contact & Inquiry Submission Handler
+// Contact & Inquiry Submission Handler with Cloud STL Link & Auto-Responder
 // ----------------------------------------------------
 
 app.post('/api/contact', contactUpload.single('attachment'), async (req, res) => {
     const { name, email, subject, message, quantity } = req.body;
-    console.log(`New Inquiry from ${name} (${email}): ${subject} - ${message}`);
+    const attachmentFile = req.file;
+    console.log(`New Inquiry from ${name} (${email}): ${subject}`);
+
+    let stlCloudUrl = 'None uploaded';
+
+    try {
+        if (attachmentFile) {
+            const uploadResult = await cloudinary.uploader.upload(attachmentFile.path, {
+                folder: 'z-vorm-stl-uploads',
+                resource_type: 'raw',
+                public_id: `stl_${Date.now()}_${path.basename(attachmentFile.originalname, path.extname(attachmentFile.originalname))}`
+            });
+            stlCloudUrl = uploadResult.secure_url;
+            console.log('STL successfully uploaded to Cloudinary raw storage:', stlCloudUrl);
+
+            fs.unlinkSync(attachmentFile.path);
+        }
+    } catch (cloudErr) {
+        console.error('Failed to upload STL to Cloudinary:', cloudErr);
+        if (attachmentFile && fs.existsSync(attachmentFile.path)) {
+            fs.unlinkSync(attachmentFile.path);
+        }
+    }
 
     if (ordersCollection) {
         try {
+            const fullMessage = (message || '') + (stlCloudUrl !== 'None uploaded' ? `\n\nSTL Download Link: ${stlCloudUrl}` : '');
             const newOrder = {
                 id: 'ORD_' + Date.now(),
                 date: new Date().toISOString(),
                 customerName: name || 'Anonymous',
                 email: email || 'N/A',
                 subject: subject || '3D Print Quote',
-                message: message || '',
+                message: fullMessage,
                 quantity: parseInt(quantity, 10) || 1,
                 status: 'Pending',
                 assignedPrinter: 'Unassigned',
@@ -525,7 +603,7 @@ app.post('/api/contact', contactUpload.single('attachment'), async (req, res) =>
                 estimatedWeightKg: 0
             };
             await ordersCollection.insertOne(newOrder);
-            console.log('Order successfully recorded to MongoDB orders collection.');
+            console.log('Order/Inquiry successfully recorded to MongoDB orders collection.');
         } catch (dbErr) {
             console.error('Failed to save order to MongoDB:', dbErr);
         }
@@ -534,13 +612,25 @@ app.post('/api/contact', contactUpload.single('attachment'), async (req, res) =>
     if (process.env.RESEND_API_KEY) {
         try {
             const resend = new Resend(process.env.RESEND_API_KEY);
+            
+            // 1. Notify Workshop
             await resend.emails.send({
-                from: 'Z-Vorm Portal <admin@z-vorm.nl>',
+                from: 'Z-Vorm Admin <admin@z-vorm.nl>',
                 to: 'contact@z-vorm.nl',
                 subject: `[Z-Vorm Inquiry] ${subject || 'New Contact Message'}`,
-                text: `You have received a new message from your website portal:\n\nName: ${name}\nEmail: ${email}\nSubject: ${subject}\nQuantity: ${quantity || 'N/A'}\n\nMessage:\n${message}`
+                text: `You have received a new message from your website portal:\n\nName: ${name}\nEmail: ${email}\nSubject: ${subject}\nQuantity: ${quantity || 'N/A'}\n\nMessage:\n${message}\n\n📎 Attached 3D Model / STL Direct Link:\n${stlCloudUrl}`
             });
-            console.log('Successfully dispatched inquiry email via Resend.');
+
+            // 2. Client Auto-Responder
+            if (email) {
+                await resend.emails.send({
+                    from: 'Z-Vorm Workshop <admin@z-vorm.nl>',
+                    to: email,
+                    subject: `We've received your 3D printing project — Z-Vorm`,
+                    text: `Hi ${name || 'there'},\n\nThank you for reaching out to Z-Vorm! We have successfully received your project files and specifications.\n\nOur engineering team is reviewing your requirements and will get back to you with a formal quote and production timeline shortly.\n\nBest regards,\nThe Z-Vorm Workshop Team\nhttps://z-vorm.nl`
+                });
+            }
+            console.log('Successfully dispatched inquiry email and client auto-responder via Resend.');
         } catch (emailErr) {
             console.error('Failed to send email via Resend:', emailErr.message);
         }

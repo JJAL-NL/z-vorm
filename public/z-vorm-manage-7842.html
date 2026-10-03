@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
+=======
+﻿<!DOCTYPE html>
+>>>>>>> 2b375b6 (feat: image optimization, secure admin auth, category filters, and UX upgrades)
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -80,6 +84,10 @@
         <!-- Navigation Tabs -->
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('products', this)">Catalog Products</button>
+<<<<<<< HEAD
+=======
+            <button class="tab-btn" onclick="switchTab('categories', this)">Categories</button>
+>>>>>>> 2b375b6 (feat: image optimization, secure admin auth, category filters, and UX upgrades)
             <button class="tab-btn" onclick="switchTab('materials', this)">Materials & Pricing</button>
             <button class="tab-btn" onclick="switchTab('calculator', this)">Calculator</button>
             <button class="tab-btn" onclick="switchTab('queue', this)">Print Queue</button>
@@ -103,6 +111,22 @@
                         <input type="number" step="0.01" id="prod-price" name="price" required placeholder="34.99">
                     </div>
                 </div>
+<<<<<<< HEAD
+=======
+
+                <div class="form-grid">
+                    <div>
+                        <label>Category</label>
+                        <select id="prod-category" name="category">
+                            <!-- Populated dynamically via JS -->
+                        </select>
+                    </div>
+                    <div>
+                        <label>Lead Time Badge</label>
+                        <input type="text" id="prod-badge" name="leadTimeBadge" placeholder="e.g. In Stock - Dispatched in 48h">
+                    </div>
+                </div>
+>>>>>>> 2b375b6 (feat: image optimization, secure admin auth, category filters, and UX upgrades)
                 
                 <div>
                     <label>Description</label>
@@ -115,6 +139,7 @@
                         <input type="text" id="prod-sizes" name="sizes" placeholder="Standard, XL">
                     </div>
                     <div>
+<<<<<<< HEAD
                         <label>Lead Time Badge</label>
                         <input type="text" id="prod-badge" name="leadTimeBadge" placeholder="In Stock - Dispatched in 48h">
                     </div>
@@ -122,12 +147,15 @@
 
                 <div class="form-grid">
                     <div>
+=======
+>>>>>>> 2b375b6 (feat: image optimization, secure admin auth, category filters, and UX upgrades)
                         <label>Custom Engraving Enabled</label>
                         <select id="prod-custom" name="customTextEnabled">
                             <option value="false">Disabled</option>
                             <option value="true">Enabled</option>
                         </select>
                     </div>
+<<<<<<< HEAD
                     <div>
                         <label>Product Visibility Status</label>
                         <select id="prod-visible" name="isVisible">
@@ -135,6 +163,16 @@
                             <option value="false">⚪ Draft (Hidden from Customers)</option>
                         </select>
                     </div>
+=======
+                </div>
+
+                <div>
+                    <label>Product Visibility Status</label>
+                    <select id="prod-visible" name="isVisible">
+                        <option value="true">🟢 Active (Live on Store)</option>
+                        <option value="false">⚪ Draft (Hidden from Customers)</option>
+                    </select>
+>>>>>>> 2b375b6 (feat: image optimization, secure admin auth, category filters, and UX upgrades)
                 </div>
 
                 <div id="existing-images-manager" style="display:none; background: #f8fafc; border: 1px solid var(--border); padding: 1rem; border-radius: 8px;">
@@ -164,6 +202,28 @@
             <div id="admin-products-list" class="item-list"></div>
         </div>
 
+<<<<<<< HEAD
+=======
+        <!-- Categories Panel -->
+        <div id="panel-categories" class="panel">
+            <h2>Manage Product Categories</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">These categories appear as filter buttons in the store and as options when adding new products.</p>
+            
+            <form action="/api/admin/categories" method="POST" style="flex-direction: row; align-items: flex-end; margin-bottom: 2rem; display: flex; gap: 1rem;">
+                <div style="flex-grow: 1;">
+                    <label>New Category Name</label>
+                    <input type="text" name="category" required placeholder="e.g. Hexagon Medals">
+                </div>
+                <button type="submit" class="btn-primary" style="margin-bottom: 0;">Add Category</button>
+            </form>
+
+            <h3 style="font-size: 1.05rem; margin-bottom: 1rem; color: var(--text-main);">Existing Categories</h3>
+            <div id="admin-categories-list" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <!-- Populated dynamically via JS -->
+            </div>
+        </div>
+
+>>>>>>> 2b375b6 (feat: image optimization, secure admin auth, category filters, and UX upgrades)
         <!-- Materials Panel -->
         <div id="panel-materials" class="panel">
             <h2>Configure Materials</h2>
@@ -312,6 +372,10 @@
     <script>
         var cachedProducts = [];
         var cachedMaterials = [];
+<<<<<<< HEAD
+=======
+        var cachedCategories = [];
+>>>>>>> 2b375b6 (feat: image optimization, secure admin auth, category filters, and UX upgrades)
 
         function switchTab(tabId, btn) {
             document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
@@ -335,6 +399,30 @@
                 const data = await res.json();
                 cachedProducts = data.products || [];
                 cachedMaterials = data.materials || [];
+<<<<<<< HEAD
+=======
+                cachedCategories = data.categories || ['Shop'];
+                
+                // Populate category dropdown in product form
+                var catSelect = document.getElementById('prod-category');
+                if (catSelect) {
+                    catSelect.innerHTML = cachedCategories.map(function(c) {
+                        return '<option value="' + c + '">' + c + '</option>';
+                    }).join('');
+                }
+
+                // Populate categories management list
+                var catList = document.getElementById('admin-categories-list');
+                if (catList) {
+                    catList.innerHTML = cachedCategories.map(function(c) {
+                        var safeName = c.replace(/'/g, "\\'");
+                        return '<div style="background: white; border: 1px solid var(--border); padding: 0.5rem 1rem; border-radius: 20px; display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.9rem;">' + 
+                            c + 
+                            ' <button onclick="deleteCategory(\'' + safeName + '\')" title="Delete Category" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 1.2rem; font-weight: bold; margin-left: 5px;">&times;</button>' +
+                        '</div>';
+                    }).join('');
+                }
+>>>>>>> 2b375b6 (feat: image optimization, secure admin auth, category filters, and UX upgrades)
                 
                 if (data.calculator) {
                     document.getElementById('calc-power').value = data.calculator.powerCostPerKWh || 0.20;
@@ -357,13 +445,21 @@
                         var visibilityBadge = p.isVisible === false ? '<span style="background:#e2e8f0; font-size:0.7rem; padding:2px 6px; border-radius:4px; margin-left:8px;">Draft</span>' : '<span style="background:#dcfce7; color:#166534; font-size:0.7rem; padding:2px 6px; border-radius:4px; margin-left:8px;">Live</span>';
                         var priceFixed = p.price.toFixed(2);
                         var imgCount = p.images ? p.images.length : 1;
+<<<<<<< HEAD
+=======
+                        var prodCat = p.category || 'Shop';
+>>>>>>> 2b375b6 (feat: image optimization, secure admin auth, category filters, and UX upgrades)
                         
                         return '<div class="item-card">' +
                             '<div style="display: flex; gap: 1rem; align-items: center;">' +
                                 '<img src="' + thumb + '" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border);">' +
                                 '<div>' +
                                     '<h4 style="display:flex; align-items:center;">' + p.name + ' ' + visibilityBadge + '</h4>' +
+<<<<<<< HEAD
                                     '<p>€' + priceFixed + ' | ' + imgCount + ' images</p>' +
+=======
+                                    '<p style="margin-bottom: 0;">€' + priceFixed + ' | ' + imgCount + ' images | ' + prodCat + '</p>' +
+>>>>>>> 2b375b6 (feat: image optimization, secure admin auth, category filters, and UX upgrades)
                                 '</div>' +
                             '</div>' +
                             '<div class="btn-group" style="margin-top: 1rem;">' +
@@ -402,6 +498,19 @@
             }
         }
 
+<<<<<<< HEAD
+=======
+        async function deleteCategory(name) {
+            if (!confirm('Are you sure you want to delete the category "' + name + '"?')) return;
+            try {
+                await fetch('/api/admin/categories/' + encodeURIComponent(name), { method: 'DELETE' });
+                loadAdminData();
+            } catch (err) {
+                console.error('Error deleting category:', err);
+            }
+        }
+
+>>>>>>> 2b375b6 (feat: image optimization, secure admin auth, category filters, and UX upgrades)
         function editProduct(id) {
             var p = cachedProducts.find(function(item) { return item.id == id; });
             if (!p) return;
@@ -411,6 +520,10 @@
             document.getElementById('edit-prod-id').value = p.id;
             document.getElementById('prod-name').value = p.name;
             document.getElementById('prod-price').value = p.price;
+<<<<<<< HEAD
+=======
+            document.getElementById('prod-category').value = p.category || 'Shop';
+>>>>>>> 2b375b6 (feat: image optimization, secure admin auth, category filters, and UX upgrades)
             document.getElementById('prod-desc').value = p.description || '';
             document.getElementById('prod-sizes').value = p.sizes || '';
             document.getElementById('prod-badge').value = p.leadTimeBadge || '';
@@ -453,6 +566,14 @@
             document.getElementById('product-form-title').innerText = 'Add New Catalog Product';
             document.getElementById('product-form').action = '/api/admin/products';
             document.getElementById('product-form').reset();
+<<<<<<< HEAD
+=======
+            
+            if (cachedCategories && cachedCategories.length > 0) {
+                document.getElementById('prod-category').value = cachedCategories[0];
+            }
+
+>>>>>>> 2b375b6 (feat: image optimization, secure admin auth, category filters, and UX upgrades)
             document.getElementById('existing-images-manager').style.display = 'none';
             document.getElementById('product-submit-btn').innerText = 'Add Product';
             document.getElementById('product-cancel-btn').style.display = 'none';
@@ -714,4 +835,8 @@
         });
     </script>
 </body>
+<<<<<<< HEAD
 </html>
+=======
+</html>
+>>>>>>> 2b375b6 (feat: image optimization, secure admin auth, category filters, and UX upgrades)

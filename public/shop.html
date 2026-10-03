@@ -67,10 +67,22 @@
         </div>
     </header>
 
-    <!-- Retail Hero Section -->
-    <section style="background: radial-gradient(circle at 50% 20%, #1e293b 0%, #0f172a 100%); color: white; padding: 5rem 2rem 4.5rem 2rem; text-align: center; margin-bottom: 3rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08); position: relative; overflow: hidden;">
+    <!-- Retail Hero Section with Background Video Loop -->
+    <section style="background-color: #0f172a; color: white; padding: 5rem 2rem 4.5rem 2rem; text-align: center; margin-bottom: 3rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08); position: relative; overflow: hidden;">
+        
+        <!-- Video Background Container -->
+        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none;">
+            <video id="bg-video-1" autoplay muted playsinline style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 1; transition: opacity 0.8s ease;">
+                <source src="background.mp4" type="video/mp4">
+            </video>
+            <video id="bg-video-2" muted playsinline style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.8s ease;">
+                <source src="backgroundLS.mp4" type="video/mp4">
+            </video>
+            <!-- Gradient Overlay for readability -->
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(11, 15, 25, 0.85) 0%, rgba(15, 23, 42, 0.75) 100%); z-index: 1;"></div>
+        </div>
+
         <div style="max-width: 850px; margin: 0 auto; position: relative; z-index: 2;">
-            
             <!-- Pill Badge -->
             <span style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--primary); background: rgba(249, 115, 22, 0.12); border: 1px solid rgba(249, 115, 22, 0.3); padding: 0.35rem 0.9rem; border-radius: 20px; display: inline-block; margin-bottom: 1.2rem;">
                 ENGINEERED & CRAFTED IN OUR WORKSHOP
@@ -128,7 +140,7 @@
             <!-- Left: Image Gallery -->
             <div style="background: #f8fafc; padding: 2rem; display: flex; flex-direction: column; gap: 1rem; align-items: center; justify-content: center; border-right: 1px solid var(--border); position: relative;">
                 <div style="position: relative; width: 100%; height: 320px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border);">
-                    <img id="modal-main-img" src="" alt="Product Preview" style="width: 100%; height: 100%; object-fit: cover;">
+                    <img id="modal-main-img" src="" alt="Product Preview" loading="lazy" style="width: 100%; height: 100%; object-fit: cover; transition: opacity 0.2s;">
                 </div>
                 <div id="modal-thumbnails" style="display: flex; gap: 0.5rem; overflow-x: auto; width: 100%; justify-content: center;"></div>
             </div>
@@ -229,6 +241,60 @@
                 fetchShopProducts();
             }
         });
+    </script>
+    
+    <!-- Sequential Dual-Video Controller Script -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const vid1 = document.getElementById('bg-video-1');
+            const vid2 = document.getElementById('bg-video-2');
+
+            if (vid1 && vid2) {
+                vid1.addEventListener('ended', () => {
+                    vid1.style.opacity = '0';
+                    vid2.style.opacity = '1';
+                    vid2.currentTime = 0;
+                    vid2.play();
+                });
+
+                vid2.addEventListener('ended', () => {
+                    vid2.style.opacity = '0';
+                    vid1.style.opacity = '1';
+                    vid1.currentTime = 0;
+                    vid1.play();
+                });
+            }
+        });
+    </script>
+
+    <!-- Product Color Swap & Cloudinary Optimizer -->
+    <script>
+        function changeProductColor(clickedSwatch, targetImageId) {
+            var mainImage = document.getElementById(targetImageId);
+            var rawUrl = clickedSwatch.getAttribute('data-image');
+            var optimizedUrl = rawUrl;
+
+            // Cloudinary Auto-Optimization Injection
+            if (rawUrl.indexOf('cloudinary.com') !== -1 && rawUrl.indexOf('f_auto') === -1) {
+                optimizedUrl = rawUrl.replace('/upload/', '/upload/f_auto,q_auto/');
+            }
+
+            mainImage.style.opacity = '0.5';
+            
+            setTimeout(function() {
+                mainImage.src = optimizedUrl;
+                mainImage.style.opacity = '1';
+            }, 150); 
+
+            var allSwatches = clickedSwatch.parentElement.children;
+            for (var i = 0; i < allSwatches.length; i++) {
+                allSwatches[i].style.border = '2px solid transparent';
+                allSwatches[i].style.boxShadow = 'none';
+            }
+            
+            clickedSwatch.style.border = '2px solid #0f172a';
+            clickedSwatch.style.boxShadow = '0 0 0 1px #fff inset';
+        }
     </script>
 </body>
 </html>

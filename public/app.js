@@ -96,6 +96,48 @@ let activeSelectedSize = '';
 let activeBasePrice = 0;
 let currentImageIndex = 0;
 
+// E-commerce state variables
+let shopCatalog = []; 
+let shopCategories = ['Shop']; // Stores official categories from DB
+let activeCategory = 'All';
+
+// Modern UI "Toast" Notification System
+function showToast(message, isError = false) {
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.style.cssText = 'position: fixed; bottom: 25px; right: 25px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; align-items: flex-end; pointer-events: none;';
+        document.body.appendChild(toastContainer);
+    }
+    const toast = document.createElement('div');
+    toast.style.cssText = `background: ${isError ? '#ef4444' : '#10b981'}; color: white; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.15); opacity: 0; transform: translateX(50px); transition: opacity 0.3s ease, transform 0.3s ease; pointer-events: auto;`;
+    toast.innerHTML = (isError ? '⚠️ ' : '✅ ') + message;
+    toastContainer.appendChild(toast);
+    
+    // Slide in
+    requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(0)';
+    });
+    
+    // Fade out and remove
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(50px)';
+        setTimeout(() => toast.remove(), 300);
+    }, 3500);
+}
+
+// Cloudinary Image Optimizer Helper
+function optimizeImageUrl(url) {
+    if (!url) return '';
+    if (url.indexOf('cloudinary.com') !== -1 && url.indexOf('f_auto') === -1) {
+        return url.replace('/upload/', '/upload/f_auto,q_auto/');
+    }
+    return url;
+}
+
 // Initialize cart from localStorage so it persists across days/visits
 let cart = JSON.parse(localStorage.getItem('zvorm_cart')) || [];
 
@@ -107,7 +149,7 @@ window.addEventListener('DOMContentLoaded', () => {
     fetchMaterialsAndConfig();
     fetchShopProducts();
     initCartUI();
-    updateCartUI(); // Load saved cart items right away
+    updateCartUI(); 
     initMinimalArrows();
 
     // Check if user just returned from a successful Mollie payment
@@ -120,11 +162,17 @@ window.addEventListener('DOMContentLoaded', () => {
         saveCart();
         updateCartUI();
 
-        // Show a polished success banner at the top of the shop
+        // Show a polished, detailed success receipt banner at the top of the shop
         const banner = document.createElement('div');
-        banner.style.cssText = "background: #dcfce7; color: #166534; border-bottom: 1px solid #bbf7d0; padding: 1rem 2rem; text-align: center; font-weight: 600; font-size: 0.95rem; position: sticky; top: 74px; z-index: 99;";
-        banner.innerHTML = `✓ Payment Successful! Thank you for your order (${orderRef}). We are preparing your items in the workshop.`;
+        banner.style.cssText = "background: #dcfce7; color: #166534; border-bottom: 1px solid #bbf7d0; padding: 1.2rem 2rem; text-align: center; font-weight: 600; font-size: 0.95rem; position: sticky; top: 74px; z-index: 99; box-shadow: 0 4px 6px rgba(0,0,0,0.02);";
+        banner.innerHTML = `✓ Payment Successful! Thank you for your order. Reference: <strong>${orderRef}</strong>. A confirmation receipt has been emailed to you and our workshop is preparing your print batch.`;
         document.body.prepend(banner);
+        
+        // Clean URL to prevent re-triggering
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.delete('order');
+        newUrl.searchParams.delete('ref');
+        window.history.replaceState({}, '', newUrl);
     }
 
     if (document.getElementById('home')) {
@@ -154,7 +202,7 @@ function initMinimalArrows() {
         rightArrow.style.cssText = "position: fixed; right: 25px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: currentColor; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2500; transition: opacity 0.2s ease, transform 0.2s ease; font-size: 2.2rem; opacity: 0.6;";
         rightArrow.innerHTML = '›';
         rightArrow.onmouseenter = () => { rightArrow.style.opacity = '1'; rightArrow.style.transform = 'translateY(-50%) scale(1.15)'; };
-        rightArrow.onmouseleave = () => { rightArrow.style.opacity = '0.6'; rightArrow.style.transform = 'translateY(-50%) scale(1)'; };
+        rightArrow.onmouseleave = () => { rightArrow.style.opacity = '0.6'; leftArrow.style.transform = 'translateY(-50%) scale(1)'; };
         document.body.appendChild(rightArrow);
     }
 }
@@ -182,14 +230,56 @@ async function fetchShopProducts() {
         const data = await response.json();
         
         if (data && data.products) {
-            renderShopProducts(data.products);
+            shopCatalog = data.products;
+            shopCategories = data.categories || ['Shop']; // Load official categories
+            
+            // Check for deep-linked product on load
+            const urlParams = new URLSearchParams(window.location.search);
+            const deepLinkItemId = urlParams.get('item');
+
+            renderShopProducts('All');
+            
+            // Trigger modal if deep link is valid
+            if (deepLinkItemId) {
+                const targetProduct = shopCatalog.find(p => p.id == deepLinkItemId);
+                if (targetProduct) {
+                    openProductModal(targetProduct);
+                }
+            }
         }
     } catch (err) {
         console.error('Failed to load shop catalog:', err);
     }
 }
 
-function renderShopProducts(products) {
+function renderCategoryFilters() {
+    const gridContainer = document.getElementById('catalog-grid') || document.querySelector('#b2c-shop .capabilities-grid');
+    if (!gridContainer) return;
+    
+    let filterDiv = document.getElementById('category-filters');
+    
+    // Dynamically inject filter bar if it doesn't exist
+    if (!filterDiv) {
+        filterDiv = document.createElement('div');
+        filterDiv.id = 'category-filters';
+        filterDiv.style.cssText = 'display: flex; gap: 0.8rem; margin-bottom: 2rem; overflow-x: auto; padding-bottom: 0.5rem;';
+        gridContainer.parentNode.insertBefore(filterDiv, gridContainer);
+    }
+    
+    // Merge 'All' with the official category list
+    const categories = ['All', ...shopCategories];
+    
+    filterDiv.innerHTML = categories.map(cat => `
+        <button onclick="renderShopProducts('${cat}')" style="padding: 0.5rem 1.2rem; border-radius: 20px; border: 1px solid ${cat === activeCategory ? 'var(--primary)' : 'var(--border)'}; background: ${cat === activeCategory ? 'var(--primary)' : 'white'}; color: ${cat === activeCategory ? 'white' : 'var(--text-main)'}; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s; box-shadow: ${cat === activeCategory ? '0 4px 6px -1px rgba(249,115,22,0.2)' : 'none'};">
+            ${cat}
+        </button>
+    `).join('');
+}
+
+function renderShopProducts(category = 'All') {
+    activeCategory = category;
+    renderCategoryFilters(); // Refresh buttons to reflect active state
+    
     const gridContainer = document.getElementById('catalog-grid') || document.querySelector('#b2c-shop .capabilities-grid');
     if (!gridContainer) return;
 
@@ -200,9 +290,18 @@ function renderShopProducts(products) {
     `;
 
     gridContainer.innerHTML = '';
+    
+    // Filter the catalog data
+    const filteredProducts = category === 'All' ? shopCatalog : shopCatalog.filter(p => (p.category || 'Shop') === category);
 
-    products.forEach(p => {
-        const imgUrl = (p.images && p.images.length > 0) ? p.images[0] : (p.image || '/uploads/default.jpg');
+    if (filteredProducts.length === 0) {
+        gridContainer.innerHTML = '<p style="color: var(--text-muted); grid-column: 1 / -1;">No products found in this category.</p>';
+        return;
+    }
+
+    filteredProducts.forEach(p => {
+        const rawImgUrl = (p.images && p.images.length > 0) ? p.images[0] : (p.image || '/uploads/default.jpg');
+        const optimizedImgUrl = optimizeImageUrl(rawImgUrl);
         const badgeHtml = p.leadTimeBadge ? `<span style="font-size: 0.7rem; color: #0284c7; background: #e0f2fe; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; display: inline-block; margin-bottom: 0.5rem;">${p.leadTimeBadge}</span>` : '';
         
         const card = document.createElement('div');
@@ -215,7 +314,7 @@ function renderShopProducts(products) {
         
         card.innerHTML = `
             <div style="position: relative; overflow: hidden; background: #f8fafc; height: 220px;">
-                <img src="${imgUrl}" alt="${p.name}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease;">
+                <img src="${optimizedImgUrl}" alt="${p.name}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease;">
             </div>
             <div style="padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 0.4rem; flex-grow: 1;">
                 ${badgeHtml}
@@ -304,19 +403,26 @@ function openProductModal(product) {
 
     updateTotalPrice();
     if (modalEl) modalEl.style.display = 'flex';
+    
+    // Deep Linking: Update the browser URL without reloading
+    const newUrl = new URL(window.location);
+    newUrl.searchParams.set('item', product.id);
+    window.history.pushState({}, '', newUrl);
 }
 
 function updateModalGallery() {
     if (!activeProduct) return;
-    const images = (activeProduct.images && activeProduct.images.length > 0) ? activeProduct.images : [activeProduct.image || '/uploads/default.jpg'];
+    const rawImages = (activeProduct.images && activeProduct.images.length > 0) ? activeProduct.images : [activeProduct.image || '/uploads/default.jpg'];
+    const optimizedImages = rawImages.map(img => optimizeImageUrl(img));
+    
     const mainImg = document.getElementById('modal-main-img');
     const thumbnailsEl = document.getElementById('modal-thumbnails');
 
-    if (mainImg) mainImg.src = images[currentImageIndex];
+    if (mainImg) mainImg.src = optimizedImages[currentImageIndex];
 
     if (thumbnailsEl) {
-        thumbnailsEl.innerHTML = images.map((img, idx) => `
-            <img src="${img}" onclick="currentImageIndex = ${idx}; updateModalGallery();" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 2px solid ${idx === currentImageIndex ? 'var(--primary)' : 'var(--border)'}; cursor: pointer;">
+        thumbnailsEl.innerHTML = optimizedImages.map((img, idx) => `
+            <img src="${img}" loading="lazy" onclick="currentImageIndex = ${idx}; updateModalGallery();" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 2px solid ${idx === currentImageIndex ? 'var(--primary)' : 'var(--border)'}; cursor: pointer;">
         `).join('');
     }
 }
@@ -363,6 +469,11 @@ function updateTotalPrice() {
 function closeProductModal() {
     const modalEl = document.getElementById('product-modal');
     if (modalEl) modalEl.style.display = 'none';
+    
+    // Deep Linking: Revert browser URL cleanly
+    const newUrl = new URL(window.location);
+    newUrl.searchParams.delete('item');
+    window.history.pushState({}, '', newUrl);
 }
 
 function closeProductModalOnBackground(event) {
@@ -401,6 +512,7 @@ function submitShopOrder() {
     saveCart();
     updateCartUI();
     closeProductModal();
+    showToast(`${qty}x ${activeProduct.name} added to your bag!`);
     openCartDrawer();
 }
 
@@ -540,7 +652,7 @@ function updateCartUI() {
             subtotal += item.price * item.qty;
             return `
                 <div style="display: flex; gap: 1rem; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
-                    <img src="${item.image}" alt="${item.name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border);">
+                    <img src="${optimizeImageUrl(item.image)}" alt="${item.name}" loading="lazy" style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border);">
                     <div style="flex-grow: 1;">
                         <h4 style="font-size: 0.95rem; margin: 0 0 0.2rem 0;">${item.name}</h4>
                         <div style="font-size: 0.75rem; color: var(--text-muted);">
@@ -567,7 +679,7 @@ function removeFromCart(index) {
 
 function proceedToCheckout() {
     if (cart.length === 0) {
-        alert('Your shopping bag is empty.');
+        showToast('Your shopping bag is empty.', true);
         return;
     }
     toggleCartDrawer();
@@ -599,11 +711,11 @@ async function submitOrderDirect(e) {
             // Redirect customer to secure Mollie hosted checkout
             window.location.href = data.checkoutUrl;
         } else {
-            alert(data.error || 'Could not initiate payment. Please try again.');
+            showToast(data.error || 'Could not initiate payment. Please try again.', true);
         }
     } catch (err) {
         console.error('Checkout error:', err);
-        alert('An error occurred while connecting to the payment gateway.');
+        showToast('An error occurred while connecting to the payment gateway.', true);
     }
 }
 
@@ -636,17 +748,17 @@ async function submitWorkshopMessage(e) {
         });
         
         if (response.ok || response.redirected) {
-            alert('Thank you! Your message has been sent to the workshop.');
+            showToast('Thank you! Your message has been sent to the workshop.');
             form.reset();
             closeContactModal();
         } else {
-            alert('Message sent successfully!');
+            showToast('Message sent successfully!');
             form.reset();
             closeContactModal();
         }
     } catch (err) {
         console.error('Submission error:', err);
-        alert('Thank you! We have received your message and will get back to you soon.');
+        showToast('Thank you! We have received your message and will get back to you soon.');
         form.reset();
         closeContactModal();
     }
@@ -697,7 +809,7 @@ async function loadSampleStlFile() {
         calculateModelMetrics(geometry, size);
     } catch (err) {
         console.error('Error loading sample STL:', err);
-        alert('Could not load sample model.');
+        showToast('Could not load sample model.', true);
     }
 }
 
