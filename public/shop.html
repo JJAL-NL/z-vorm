@@ -9,12 +9,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- SEO & Open Graph Meta Tags -->
-    <title>Z-Vorm Shop | Custom 3D-Printed Wall Displays, Hexagon Medals &amp; Sports Gear</title>
+    <title>Z-Vorm | Custom Engineered 3D Prints</title>
     <meta name="description" content="Custom 3D-printed wall displays, hexagon medal hangers, Hyrox &amp; running gear, and unique DIY accessories. Engineered in-house. Fast EU shipping to NL, BE &amp; DE.">
     <meta name="keywords" content="running, runner, hyrox, medal, wall display, hexagon medals, hardlopen, hardloper, medaille, wanddisplay, zeshoekige medailles, laufen, läufer, medaillen, wandhalterung, sechseckiges medaillen display, 3D printing on demand">
     <link rel="canonical" href="https://z-vorm.nl/shop">
 
-    <meta property="og:title" content="Z-Vorm Shop | Custom Wall Displays, Hexagon Medals &amp; Sports Gear">
+    <meta property="og:title" content="Z-Vorm | Custom Engineered 3D Prints">
     <meta property="og:description" content="Precision 3D-printed wall displays, running &amp; Hyrox hexagon medal holders, and custom gear engineered and crafted in our workshop.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://z-vorm.nl/shop">
@@ -22,7 +22,7 @@
 
     <!-- Twitter / X Card Tags -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Z-Vorm Shop | Custom Wall Displays &amp; Hexagon Medals">
+    <meta name="twitter:title" content="Z-Vorm | Custom Engineered 3D Prints">
     <meta name="twitter:description" content="Precision 3D-printed running, runner, and Hyrox hexagon medal wall displays crafted in-house.">
     <meta name="twitter:image" content="https://z-vorm.nl/logo.png">
 
@@ -169,9 +169,9 @@
                         <div id="modal-size-swatches" style="display: flex; gap: 0.6rem; flex-wrap: wrap;"></div>
                     </div>
 
-                    <!-- Custom Text / Engraving Container -->
+                    <!-- Custom Text Container -->
                     <div style="display: none;" id="modal-custom-text-container">
-                        <label style="font-size: 0.80rem; font-weight: 700; display: block; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.5px;">Custom Engraving / Text</label>
+                        <label style="font-size: 0.80rem; font-weight: 700; display: block; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.5px;">Custom Text</label>
                         <input type="text" id="modal-custom-text-input" placeholder="Enter custom text..." style="width: 100%; padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); font-size: 0.9rem;">
                     </div>
 
@@ -265,36 +265,6 @@
                 });
             }
         });
-    </script>
-
-    <!-- Product Color Swap & Cloudinary Optimizer -->
-    <script>
-        function changeProductColor(clickedSwatch, targetImageId) {
-            var mainImage = document.getElementById(targetImageId);
-            var rawUrl = clickedSwatch.getAttribute('data-image');
-            var optimizedUrl = rawUrl;
-
-            // Cloudinary Auto-Optimization Injection
-            if (rawUrl.indexOf('cloudinary.com') !== -1 && rawUrl.indexOf('f_auto') === -1) {
-                optimizedUrl = rawUrl.replace('/upload/', '/upload/f_auto,q_auto/');
-            }
-
-            mainImage.style.opacity = '0.5';
-            
-            setTimeout(function() {
-                mainImage.src = optimizedUrl;
-                mainImage.style.opacity = '1';
-            }, 150); 
-
-            var allSwatches = clickedSwatch.parentElement.children;
-            for (var i = 0; i < allSwatches.length; i++) {
-                allSwatches[i].style.border = '2px solid transparent';
-                allSwatches[i].style.boxShadow = 'none';
-            }
-            
-            clickedSwatch.style.border = '2px solid #0f172a';
-            clickedSwatch.style.boxShadow = '0 0 0 1px #fff inset';
-        }
     </script>
 </body>
 </html>
