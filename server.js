@@ -31,15 +31,16 @@ app.use(
 );
 
 app.use((req, res, next) => {
+    if (req.path === '/api/health') return next(); // Skip redirect for health check
     if (req.headers['x-forwarded-proto'] !== 'https' && process.env.NODE_ENV === 'production') {
         return res.redirect(`https://${req.headers.host}${req.url}`);
     }
     next();
 });
 
-// Lightweight health-check endpoint for cron-job keep-alive pings
+// Lightweight plain-text health-check endpoint for cron-job keep-alive pings
 app.get('/api/health', (req, res) => {
-    res.status(200).json({ status: 'active', timestamp: new Date().toISOString() });
+    res.status(200).send('OK');
 });
 
 const adminLimiter = rateLimit({
