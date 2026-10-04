@@ -37,6 +37,11 @@ app.use((req, res, next) => {
     next();
 });
 
+// Lightweight health-check endpoint for cron-job keep-alive pings
+app.get('/api/health', (req, res) => {
+    res.status(200).json({ status: 'active', timestamp: new Date().toISOString() });
+});
+
 const adminLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
