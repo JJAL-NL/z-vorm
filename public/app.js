@@ -477,17 +477,15 @@ function updateLetteringPreview() {
         charCountDisplay.innerText = `${charCount} billable characters (${rawText.length} total with spaces)`;
     }
 
-    const heightMultipliers = {
-        "5cm": 0.6,
-        "10cm": 1.0,
-        "15cm": 1.6,
-        "20cm": 2.4
+    const heightPrices = {
+        "5cm": 2.00,
+        "10cm": 3.00,
+        "15cm": 4.00,
+        "20cm": 5.00
     };
-
-    const multiplier = heightMultipliers[heightTier] || 1.0;
-    const baseCharPrice = activeBasePrice > 0 ? activeBasePrice : 3.50;
     
-    let total = charCount * baseCharPrice * multiplier;
+    const pricePerLetter = heightPrices[heightTier] || 3.00;
+    let total = charCount * pricePerLetter;
 
     const qtyInput = document.getElementById('modal-qty');
     const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
@@ -620,9 +618,9 @@ function submitShopOrder() {
         const billedCharacters = rawText.replace(/\s+/g, '');
         const charCount = billedCharacters.length;
 
-        const heightMultipliers = { "5cm": 0.6, "10cm": 1.0, "15cm": 1.6, "20cm": 2.4 };
-        const multiplier = heightMultipliers[heightTier] || 1.0;
-        let unitPrice = charCount * activeBasePrice * multiplier;
+        const heightPrices = { "5cm": 2.00, "10cm": 3.00, "15cm": 4.00, "20cm": 5.00 };
+        const pricePerLetter = heightPrices[heightTier] || 3.00;
+        let unitPrice = charCount * pricePerLetter;
 
         cartItem = {
             id: activeProduct.id + '-' + activeSelectedColor + '-' + heightTier + '-' + mountingType + '-' + rawText,
