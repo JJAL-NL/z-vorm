@@ -489,14 +489,6 @@ function updateLetteringPreview() {
     
     let total = charCount * baseCharPrice * multiplier;
 
-    if (mountingType === 'freestanding') {
-        total *= 1.20;
-    }
-
-    if (mountingType === 'wall' && addStencil) {
-        total += 5.00;
-    }
-
     const qtyInput = document.getElementById('modal-qty');
     const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
     total *= qty;
@@ -631,8 +623,6 @@ function submitShopOrder() {
         const heightMultipliers = { "5cm": 0.6, "10cm": 1.0, "15cm": 1.6, "20cm": 2.4 };
         const multiplier = heightMultipliers[heightTier] || 1.0;
         let unitPrice = charCount * activeBasePrice * multiplier;
-        if (mountingType === 'freestanding') unitPrice *= 1.20;
-        if (mountingType === 'wall' && addStencil) unitPrice += 5.00;
 
         cartItem = {
             id: activeProduct.id + '-' + activeSelectedColor + '-' + heightTier + '-' + mountingType + '-' + rawText,
