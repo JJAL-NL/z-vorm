@@ -459,16 +459,13 @@ function updateLetteringPreview() {
     const heightSelect = document.getElementById('lettering-height-select');
     const mountingSelect = document.getElementById('lettering-mounting-select');
     const fontSelect = document.getElementById('lettering-font-select');
-    const stencilCheckbox = document.getElementById('lettering-stencil-checkbox');
     const charCountDisplay = document.getElementById('char-count-display');
     const livePreviewBox = document.getElementById('live-lettering-preview');
     const priceEl = document.getElementById('modal-total-price');
 
     const rawText = textInput ? textInput.value || 'Z-VORM' : 'Z-VORM';
     const heightTier = heightSelect ? heightSelect.value : '10cm';
-    const mountingType = mountingSelect ? mountingSelect.value : 'wall';
     const selectedFont = fontSelect ? fontSelect.value : 'Montserrat';
-    const addStencil = stencilCheckbox ? stencilCheckbox.checked : false;
 
     const billedCharacters = rawText.replace(/\s+/g, '');
     const charCount = billedCharacters.length;
@@ -607,13 +604,11 @@ function submitShopOrder() {
         const heightSelect = document.getElementById('lettering-height-select');
         const mountingSelect = document.getElementById('lettering-mounting-select');
         const fontSelect = document.getElementById('lettering-font-select');
-        const stencilCheckbox = document.getElementById('lettering-stencil-checkbox');
 
         const rawText = textInput ? textInput.value || 'Z-VORM' : 'Z-VORM';
         const heightTier = heightSelect ? heightSelect.value : '10cm';
         const mountingType = mountingSelect ? mountingSelect.value : 'wall';
         const selectedFont = fontSelect ? fontSelect.value : 'Montserrat';
-        const addStencil = stencilCheckbox ? stencilCheckbox.checked : false;
 
         const billedCharacters = rawText.replace(/\s+/g, '');
         const charCount = billedCharacters.length;
@@ -636,7 +631,6 @@ function submitShopOrder() {
                 height: heightTier,
                 mounting: mountingType,
                 font: selectedFont,
-                stencil: addStencil,
                 color: activeSelectedColor
             },
             image: productImages[0]
@@ -814,7 +808,7 @@ function updateCartUI() {
                     <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">
                         Text: "${item.customizations.text}"<br>
                         Height: ${item.customizations.height} | Mounting: ${item.customizations.mounting}<br>
-                        Font: ${item.customizations.font} ${item.customizations.stencil ? '| Stencil (+€5)' : ''}
+                        Font: ${item.customizations.font}
                     </div>
                 `;
             } else {
