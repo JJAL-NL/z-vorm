@@ -112,7 +112,7 @@ async function initDB() {
 
     const client = new MongoClient(mongoUri);
     await client.connect();
-    console.log("Connected successfully to MongoDB Atlas!");
+    console.log("Connected successfully to MongoDB Atlas!");[cite: 6]
     
     const db = client.db('zvorm_db');
     settingsCollection = db.collection('settings');
@@ -131,22 +131,46 @@ async function initDB() {
         } else {
             console.log("Creating default catalog...");
             defaultData = {
-                calculator: { powerCostPerKWh: 0.20, printerWattage: 150, profitMargin: 0.30, baseShipping: 7.00 },
+                calculator: { 
+                    powerCostPerKWh: 0.20, 
+                    printerWattage: 150, 
+                    profitMargin: 0.30, 
+                    baseShipping: 7.00,
+                    standardShippingFee: 5.00,
+                    freeShippingThreshold: 50.00 
+                },
                 infrastructure: { renderUrl: "https://z-vorm.onrender.com", githubRepo: "JUAL93/Z-Vorm", nasIp: "192.168.1.150", mollieEndpoint: "https://api.mollie.com" },
-                categories: ["Shop", "Mounts", "Accessories", "Medals"], // Core dynamic categories setup
+                categories: ["Shop", "Mounts", "Accessories", "Medals"],
                 materials: [
                     { id: "pla", name: "PLA / PLA-PHA", pricePerKg: 20.00, description: "General prototypes.", colors: [{name: "Matte Black", hex: "#111111"}, {name: "Z-Vorm Orange", hex: "#f97316"}] }
                 ],
                 products: [
                     { id: 1, name: "VeloDock Wall Mount", price: 34.99, description: "Premium bicycle wall mount system.", category: "Shop", sizes: "Standard, XL", isVisible: true, customTextEnabled: false, images: ["/uploads/default.jpg"], colors: [{name: "Matte Black", hex: "#111111"}] }
+                ],
+                fonts: [
+                    { name: "Montserrat", family: "'Montserrat', sans-serif", url: "https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" },
+                    { name: "Futura", family: "'Century Gothic', sans-serif", url: "" },
+                    { name: "Impact Stencil", family: "Impact, sans-serif", url: "" }
                 ]
             };
         }
         await settingsCollection.insertOne({ _id: 'site_settings', ...defaultData });
         console.log("Migration complete!");
-    } else if (!existing.categories) {
-        // Auto-patch old databases that lack the categories array
-        await settingsCollection.updateOne({ _id: 'site_settings' }, { $set: { categories: ["Shop", "Mounts", "Accessories", "Medals"] } });
+    } else {
+        const updateFields = {};
+        if (!existing.categories) updateFields.categories = ["Shop", "Mounts", "Accessories", "Medals"];
+        if (!existing.fonts) updateFields.fonts = [
+            { name: "Montserrat", family: "'Montserrat', sans-serif", url: "https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" },
+            { name: "Futura", family: "'Century Gothic', sans-serif", url: "" },
+            { name: "Impact Stencil", family: "Impact, sans-serif", url: "" }
+        ];
+        if (existing.calculator) {
+            if (existing.calculator.standardShippingFee === undefined) updateFields["calculator.standardShippingFee"] = 5.00;
+            if (existing.calculator.freeShippingThreshold === undefined) updateFields["calculator.freeShippingThreshold"] = 50.00;
+        }
+        if (Object.keys(updateFields).length > 0) {
+            await settingsCollection.updateOne({ _id: 'site_settings' }, { $set: updateFields });
+        }
     }
 }
 
@@ -193,17 +217,23 @@ app.get('/api/settings', async (req, res) => {
 
     res.json({
         calculator: settings.calculator,
-        categories: settings.categories || ['Shop'], // Exposed category list for storefront filter bar
+        categories: settings.categories || ['Shop'],
         materials: materialsWithDiff,
-        products: publicProducts
+        products: publicProducts,
+        fonts: settings.fonts || []
     });
 });
 
 app.post('/api/admin/settings', async (req, res) => {
     const data = await getSettings();
-    data.calculator = req.body;
+    data.calculator = {
+        ...data.calculator,
+        ...req.body,
+        standardShippingFee: parseFloat(req.body.standardShippingFee) || 5.00,
+        freeShippingThreshold: parseFloat(req.body.freeShippingThreshold) || 50.00
+    };
     await saveSettings(data);
-    res.json({ success: true, message: 'Calculator settings updated successfully' });
+    res.json({ success: true, message: 'Calculator and shipping settings updated successfully' });
 });
 
 app.post('/api/admin/infrastructure', async (req, res) => {
@@ -230,6 +260,32 @@ app.delete('/api/admin/categories/:name', async (req, res) => {
     const data = await getSettings();
     if (data.categories) {
         data.categories = data.categories.filter(c => c !== req.params.name);
+        await saveSettings(data);
+    }
+    res.json({ success: true });
+});
+
+// --- Font Management Routes ---
+app.post('/api/admin/fonts', async (req, res) => {
+    const data = await getSettings();
+    if (!data.fonts) data.fonts = [];
+    
+    const { name, family, url } = req.body;
+    if (name && family) {
+        data.fonts.push({
+            name: name.trim(),
+            family: family.trim(),
+            url: url ? url.trim() : ''
+        });
+        await saveSettings(data);
+    }
+    res.redirect('/z-vorm-manage-7842.html');
+});
+
+app.delete('/api/admin/fonts/:name', async (req, res) => {
+    const data = await getSettings();
+    if (data.fonts) {
+        data.fonts = data.fonts.filter(f => f.name !== req.params.name);
         await saveSettings(data);
     }
     res.json({ success: true });
@@ -446,7 +502,7 @@ app.get('/api/admin/analytics', async (req, res) => {
 });
 
 // ----------------------------------------------------
-// Mollie Checkout Payment Route
+// Mollie Checkout Payment Route with Dynamic Shipping Calculation
 // ----------------------------------------------------
 app.post('/api/create-payment', async (req, res) => {
     try {
@@ -462,7 +518,13 @@ app.post('/api/create-payment', async (req, res) => {
             return res.status(400).json({ error: 'Your shopping bag is empty.' });
         }
 
-        const totalAmount = cartItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
+        const settings = await getSettings();
+        const calcSettings = settings.calculator || { standardShippingFee: 5.00, freeShippingThreshold: 50.00 };
+
+        const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
+        const shippingFee = subtotal >= (calcSettings.freeShippingThreshold ?? 50.00) ? 0.00 : (calcSettings.standardShippingFee ?? 5.00);
+        const totalAmount = subtotal + shippingFee;
+
         const orderId = 'ORD_' + Date.now();
 
         const payment = await mollieClient.payments.create({
@@ -476,7 +538,9 @@ app.post('/api/create-payment', async (req, res) => {
             metadata: {
                 orderId,
                 shippingDetails,
-                cartItems
+                cartItems,
+                subtotal,
+                shippingFee
             }
         });
 
@@ -487,7 +551,7 @@ app.post('/api/create-payment', async (req, res) => {
                 customerName: `${shippingDetails.firstName} ${shippingDetails.lastName}`,
                 email: shippingDetails.email,
                 subject: 'B2C Webshop Order',
-                message: `Shipping to: ${shippingDetails.street}, ${shippingDetails.postalCode} ${shippingDetails.city}, ${shippingDetails.country}`,
+                message: `Shipping to: ${shippingDetails.street}, ${shippingDetails.postalCode} ${shippingDetails.city}, ${shippingDetails.country} (Shipping: €${shippingFee.toFixed(2)})`,
                 quantity: cartItems.reduce((sum, i) => sum + i.qty, 0),
                 status: 'Payment Pending',
                 assignedPrinter: 'Unassigned',
@@ -511,12 +575,14 @@ app.post('/api/mollie-webhook', async (req, res) => {
         const orderId = payment.metadata && payment.metadata.orderId;
 
         if (payment.isPaid()) {
-            console.log(`Payment ${paymentId} for order ${orderId} was successfully paid!`);
+            console.log(`Payment ${paymentId} for order ${orderId} was successfully paid!`);[cite: 6]
             
             const shippingDetails = payment.metadata && payment.metadata.shippingDetails ? payment.metadata.shippingDetails : {};
             const customerEmail = shippingDetails.email;
             const customerName = `${shippingDetails.firstName || ''} ${shippingDetails.lastName || ''}`.trim() || 'Customer';
             const cartItems = payment.metadata && payment.metadata.cartItems ? payment.metadata.cartItems : [];
+            const subtotal = payment.metadata && payment.metadata.subtotal ? parseFloat(payment.metadata.subtotal) : 0;
+            const shippingFee = payment.metadata && payment.metadata.shippingFee !== undefined ? parseFloat(payment.metadata.shippingFee) : 5.00;
 
             if (ordersCollection && orderId) {
                 await ordersCollection.updateOne(
@@ -525,7 +591,6 @@ app.post('/api/mollie-webhook', async (req, res) => {
                 );
             }
 
-            // Dispatch automated order confirmation via Resend with BCC to contact@z-vorm.nl
             if (process.env.RESEND_API_KEY && customerEmail) {
                 try {
                     const resend = new Resend(process.env.RESEND_API_KEY);
@@ -539,7 +604,7 @@ app.post('/api/mollie-webhook', async (req, res) => {
                         to: customerEmail,
                         bcc: 'contact@z-vorm.nl',
                         subject: `Order Confirmation — Z-Vorm (${orderId})`,
-                        text: `Hi ${customerName},\n\nThank you for your order! We have received your payment and are preparing your items in our workshop.\n\nOrder Reference: ${orderId}\n\nShipping Address:\n${shippingDetails.street || ''}, ${shippingDetails.postalCode || ''} ${shippingDetails.city || ''} (${shippingDetails.country || ''})\n\nItems Ordered:\n${itemsListText}\n\nWe will notify you once your order is dispatched.\n\nBest regards,\nThe Z-Vorm Team\nhttps://z-vorm.nl`
+                        text: `Hi ${customerName},\n\nThank you for your order! We have received your payment and are preparing your items in our workshop.\n\nOrder Reference: ${orderId}\n\nShipping Address:\n${shippingDetails.street || ''}, ${shippingDetails.postalCode || ''} ${shippingDetails.city || ''} (${shippingDetails.country || ''})\n\nItems Ordered:\n${itemsListText}\n\nSubtotal: €${subtotal.toFixed(2)}\nShipping: ${shippingFee === 0 ? 'FREE' : '€' + shippingFee.toFixed(2)}\nTotal Paid: €${(subtotal + shippingFee).toFixed(2)}\n\nWe will notify you once your order is dispatched.\n\nBest regards,\nThe Z-Vorm Team\nhttps://z-vorm.nl`
                     });
                     console.log(`Order confirmation email successfully dispatched to ${customerEmail} (BCC: contact@z-vorm.nl)`);
                 } catch (emailErr) {
@@ -619,7 +684,6 @@ app.post('/api/contact', contactUpload.single('attachment'), async (req, res) =>
         try {
             const resend = new Resend(process.env.RESEND_API_KEY);
             
-            // 1. Notify Workshop
             await resend.emails.send({
                 from: 'Z-Vorm Admin <admin@z-vorm.nl>',
                 to: 'contact@z-vorm.nl',
@@ -627,7 +691,6 @@ app.post('/api/contact', contactUpload.single('attachment'), async (req, res) =>
                 text: `You have received a new message from your website portal:\n\nName: ${name}\nEmail: ${email}\nSubject: ${subject}\nQuantity: ${quantity || 'N/A'}\n\nMessage:\n${message}\n\n📎 Attached 3D Model / STL Direct Link:\n${stlCloudUrl}`
             });
 
-            // 2. Client Auto-Responder
             if (email) {
                 await resend.emails.send({
                     from: 'Z-Vorm Workshop <admin@z-vorm.nl>',
@@ -653,7 +716,7 @@ app.post('/api/contact', contactUpload.single('attachment'), async (req, res) =>
 
 initDB().then(() => {
     app.listen(PORT, () => {
-        console.log(`Z-Vorm server running on http://localhost:${PORT}`);
+        console.log(`Z-Vorm server running on http://localhost:${PORT}`);[cite: 6]
     });
 }).catch(err => {
     console.error("Failed to connect to database on startup:", err);

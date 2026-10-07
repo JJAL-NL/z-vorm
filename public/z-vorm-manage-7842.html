@@ -82,7 +82,7 @@
             <button class="tab-btn active" onclick="switchTab('products', this)">Catalog Products</button>
             <button class="tab-btn" onclick="switchTab('categories', this)">Categories</button>
             <button class="tab-btn" onclick="switchTab('materials', this)">Materials & Pricing</button>
-            <button class="tab-btn" onclick="switchTab('calculator', this)">Calculator</button>
+            <button class="tab-btn" onclick="switchTab('calculator', this)">Calculator & Shipping</button>
             <button class="tab-btn" onclick="switchTab('queue', this)">Print Queue</button>
             <button class="tab-btn" onclick="switchTab('analytics', this)">Analytics</button>
             <button class="tab-btn" onclick="switchTab('infra', this)">Infrastructure</button>
@@ -227,7 +227,7 @@
 
         <!-- Calculator Settings Panel -->
         <div id="panel-calculator" class="panel">
-            <h2>Production Calculator Settings</h2>
+            <h2>Production Calculator & Shipping Settings</h2>
             <form id="calculator-form" onsubmit="saveCalculatorSettings(event)">
                 <div class="form-grid">
                     <div>
@@ -245,11 +245,21 @@
                         <input type="number" step="0.05" id="calc-margin" name="profitMargin" required>
                     </div>
                     <div>
-                        <label>Base Shipping Cost (€)</label>
+                        <label>Base Shipping Cost (€) [B2B Quote]</label>
                         <input type="number" step="0.01" id="calc-shipping" name="baseShipping" required>
                     </div>
                 </div>
-                <button type="submit" class="btn-primary">Update Calculator Settings</button>
+                <div class="form-grid">
+                    <div>
+                        <label>Standard Shipping Fee (€) [B2C Store]</label>
+                        <input type="number" step="0.01" id="calc-std-shipping" name="standardShippingFee" required placeholder="5.00">
+                    </div>
+                    <div>
+                        <label>Free Shipping Threshold (€)</label>
+                        <input type="number" step="0.01" id="calc-free-threshold" name="freeShippingThreshold" required placeholder="50.00">
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary">Update Calculator & Shipping Settings</button>
             </form>
         </div>
 
@@ -365,7 +375,6 @@
                 cachedMaterials = data.materials || [];
                 cachedCategories = data.categories || ['Shop'];
                 
-                // Populate category dropdown in product form
                 var catSelect = document.getElementById('prod-category');
                 if (catSelect) {
                     catSelect.innerHTML = cachedCategories.map(function(c) {
@@ -373,7 +382,6 @@
                     }).join('');
                 }
 
-                // Populate categories management list
                 var catList = document.getElementById('admin-categories-list');
                 if (catList) {
                     catList.innerHTML = cachedCategories.map(function(c) {
@@ -390,6 +398,8 @@
                     document.getElementById('calc-wattage').value = data.calculator.printerWattage || 150;
                     document.getElementById('calc-margin').value = data.calculator.profitMargin || 0.30;
                     document.getElementById('calc-shipping').value = data.calculator.baseShipping || 7.00;
+                    document.getElementById('calc-std-shipping').value = data.calculator.standardShippingFee ?? 5.00;
+                    document.getElementById('calc-free-threshold').value = data.calculator.freeShippingThreshold ?? 50.00;
                 }
 
                 if (data.infrastructure) {
@@ -621,7 +631,9 @@
                 powerCostPerKWh: parseFloat(document.getElementById('calc-power').value),
                 printerWattage: parseFloat(document.getElementById('calc-wattage').value),
                 profitMargin: parseFloat(document.getElementById('calc-margin').value),
-                baseShipping: parseFloat(document.getElementById('calc-shipping').value)
+                baseShipping: parseFloat(document.getElementById('calc-shipping').value),
+                standardShippingFee: parseFloat(document.getElementById('calc-std-shipping').value),
+                freeShippingThreshold: parseFloat(document.getElementById('calc-free-threshold').value)
             };
             const res = await fetch('/api/admin/settings', {
                 method: 'POST',

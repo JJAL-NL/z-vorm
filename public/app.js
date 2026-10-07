@@ -20,14 +20,12 @@ function showSection(sectionId) {
 
     targetSection.classList.remove('hidden-section');
 
-    // Directional slide matching user navigation flow
     if (isMovingRight) {
         targetSection.classList.add('section-slide-right');
     } else {
         targetSection.classList.add('section-slide-left');
     }
     
-    // Fade out the global video when not on home page
     const globalVideo = document.getElementById('global-video-bg');
     if (globalVideo) {
         if (sectionId === 'home') {
@@ -37,7 +35,6 @@ function showSection(sectionId) {
         }
     }
 
-    // Update active state in top navigation header (null-safe)
     const navButtons = document.querySelectorAll('header nav button');
     navButtons.forEach(btn => {
         const onclickAttr = btn.getAttribute('onclick') || '';
@@ -96,12 +93,17 @@ let activeSelectedSize = '';
 let activeBasePrice = 0;
 let currentImageIndex = 0;
 
-// E-commerce state variables
 let shopCatalog = []; 
-let shopCategories = ['Shop']; // Stores official categories from DB
+let shopCategories = ['Shop']; 
 let activeCategory = 'All';
+let availableFonts = []; 
 
-// Modern UI "Toast" Notification System
+// Dynamic Shipping Store Settings (synced from MongoDB)
+let storeConfig = {
+    standardShippingFee: 5.00,
+    freeShippingThreshold: 50.00
+};
+
 function showToast(message, isError = false) {
     let toastContainer = document.getElementById('toast-container');
     if (!toastContainer) {
@@ -115,13 +117,11 @@ function showToast(message, isError = false) {
     toast.innerHTML = (isError ? '⚠️ ' : '✅ ') + message;
     toastContainer.appendChild(toast);
     
-    // Slide in
     requestAnimationFrame(() => {
         toast.style.opacity = '1';
         toast.style.transform = 'translateX(0)';
     });
     
-    // Fade out and remove
     setTimeout(() => {
         toast.style.opacity = '0';
         toast.style.transform = 'translateX(50px)';
@@ -129,7 +129,6 @@ function showToast(message, isError = false) {
     }, 3500);
 }
 
-// Cloudinary Image Optimizer Helper
 function optimizeImageUrl(url) {
     if (!url) return '';
     if (url.indexOf('cloudinary.com') !== -1 && url.indexOf('f_auto') === -1) {
@@ -138,7 +137,6 @@ function optimizeImageUrl(url) {
     return url;
 }
 
-// Initialize cart from localStorage so it persists across days/visits
 let cart = JSON.parse(localStorage.getItem('zvorm_cart')) || [];
 
 function saveCart() {
@@ -152,23 +150,19 @@ window.addEventListener('DOMContentLoaded', () => {
     updateCartUI(); 
     initMinimalArrows();
 
-    // Check if user just returned from a successful Mollie payment
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('order') === 'success') {
         const orderRef = urlParams.get('ref') || 'Z-Vorm Order';
         
-        // Clear local storage cart
         cart = [];
         saveCart();
         updateCartUI();
 
-        // Show a polished, detailed success receipt banner at the top of the shop
         const banner = document.createElement('div');
         banner.style.cssText = "background: #dcfce7; color: #166534; border-bottom: 1px solid #bbf7d0; padding: 1.2rem 2rem; text-align: center; font-weight: 600; font-size: 0.95rem; position: sticky; top: 74px; z-index: 99; box-shadow: 0 4px 6px rgba(0,0,0,0.02);";
         banner.innerHTML = `✓ Payment Successful! Thank you for your order. Reference: <strong>${orderRef}</strong>. A confirmation receipt has been emailed to you and our workshop is preparing your print batch.`;
         document.body.prepend(banner);
         
-        // Clean URL to prevent re-triggering
         const newUrl = new URL(window.location);
         newUrl.searchParams.delete('order');
         newUrl.searchParams.delete('ref');
@@ -180,7 +174,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Minimalist, borderless, transparent navigation arrows visible on any background
 function initMinimalArrows() {
     if (!document.getElementById('nav-arrow-left') && document.getElementById('home')) {
         const leftArrow = document.createElement('button');
@@ -202,7 +195,7 @@ function initMinimalArrows() {
         rightArrow.style.cssText = "position: fixed; right: 25px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: currentColor; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2500; transition: opacity 0.2s ease, transform 0.2s ease; font-size: 2.2rem; opacity: 0.6;";
         rightArrow.innerHTML = '›';
         rightArrow.onmouseenter = () => { rightArrow.style.opacity = '1'; rightArrow.style.transform = 'translateY(-50%) scale(1.15)'; };
-        rightArrow.onmouseleave = () => { rightArrow.style.opacity = '0.6'; leftArrow.style.transform = 'translateY(-50%) scale(1)'; };
+        rightArrow.onmouseleave = () => { rightArrow.style.opacity = '0.6'; rightArrow.style.transform = 'translateY(-50%) scale(1)'; };
         document.body.appendChild(rightArrow);
     }
 }
@@ -216,11 +209,29 @@ async function fetchMaterialsAndConfig() {
     try {
         const response = await fetch('/api/settings');
         const data = await response.json();
+        if (data && data.calculator) {
+            storeConfig.standardShippingFee = data.calculator.standardShippingFee ?? 5.00;
+            storeConfig.freeShippingThreshold = data.calculator.freeShippingThreshold ?? 50.00;
+        }
         if (data && data.materials) {
             renderMaterialSelector(data.materials);
         }
+        if (data && data.fonts) {
+            availableFonts = data.fonts;
+            availableFonts.forEach(font => {
+                if (font.url && font.url.trim() !== '') {
+                    if (!document.querySelector(`link[href="${font.url}"]`)) {
+                        const link = document.createElement('link');
+                        link.rel = 'stylesheet';
+                        link.href = font.url;
+                        document.head.appendChild(link);
+                    }
+                }
+            });
+        }
+        updateCartUI();
     } catch (err) {
-        console.error('Failed to load materials:', err);
+        console.error('Failed to load store settings:', err);
     }
 }
 
@@ -231,15 +242,22 @@ async function fetchShopProducts() {
         
         if (data && data.products) {
             shopCatalog = data.products;
-            shopCategories = data.categories || ['Shop']; // Load official categories
+            shopCategories = data.categories || ['Shop'];
             
-            // Check for deep-linked product on load
+            if (data.calculator) {
+                storeConfig.standardShippingFee = data.calculator.standardShippingFee ?? 5.00;
+                storeConfig.freeShippingThreshold = data.calculator.freeShippingThreshold ?? 50.00;
+            }
+
+            if (data.fonts) {
+                availableFonts = data.fonts;
+            }
+
             const urlParams = new URLSearchParams(window.location.search);
             const deepLinkItemId = urlParams.get('item');
 
             renderShopProducts('All');
             
-            // Trigger modal if deep link is valid
             if (deepLinkItemId) {
                 const targetProduct = shopCatalog.find(p => p.id == deepLinkItemId);
                 if (targetProduct) {
@@ -258,7 +276,6 @@ function renderCategoryFilters() {
     
     let filterDiv = document.getElementById('category-filters');
     
-    // Dynamically inject filter bar if it doesn't exist
     if (!filterDiv) {
         filterDiv = document.createElement('div');
         filterDiv.id = 'category-filters';
@@ -266,7 +283,6 @@ function renderCategoryFilters() {
         gridContainer.parentNode.insertBefore(filterDiv, gridContainer);
     }
     
-    // Merge 'All' with the official category list
     const categories = ['All', ...shopCategories];
     
     filterDiv.innerHTML = categories.map(cat => `
@@ -278,7 +294,7 @@ function renderCategoryFilters() {
 
 function renderShopProducts(category = 'All') {
     activeCategory = category;
-    renderCategoryFilters(); // Refresh buttons to reflect active state
+    renderCategoryFilters();
     
     const gridContainer = document.getElementById('catalog-grid') || document.querySelector('#b2c-shop .capabilities-grid');
     if (!gridContainer) return;
@@ -291,7 +307,6 @@ function renderShopProducts(category = 'All') {
 
     gridContainer.innerHTML = '';
     
-    // Filter the catalog data
     const filteredProducts = category === 'All' ? shopCatalog : shopCatalog.filter(p => (p.category || 'Shop') === category);
 
     if (filteredProducts.length === 0) {
@@ -376,13 +391,43 @@ function openProductModal(product) {
     }
 
     const customTextContainer = document.getElementById('modal-custom-text-container');
-    const customTextInput = document.getElementById('modal-custom-text-input');
-    if (product.customTextEnabled) {
-        if (customTextContainer) customTextContainer.style.display = 'block';
-        if (customTextInput) customTextInput.value = '';
-    } else {
+    const customLetteringOptions = document.getElementById('custom-lettering-options');
+    
+    if (product.customTextEnabled && (product.name.toLowerCase().includes('letter') || product.name.toLowerCase().includes('logo'))) {
         if (customTextContainer) customTextContainer.style.display = 'none';
-        if (customTextInput) customTextInput.value = '';
+        if (customLetteringOptions) {
+            customLetteringOptions.style.display = 'block';
+            
+            const fontSelect = document.getElementById('lettering-font-select');
+            if (fontSelect) {
+                if (availableFonts && availableFonts.length > 0) {
+                    fontSelect.innerHTML = availableFonts.map(f => `<option value="${f.name}">${f.name}</option>`).join('');
+                } else {
+                    fontSelect.innerHTML = `
+                        <option value="Montserrat">Montserrat</option>
+                        <option value="Futura">Futura</option>
+                        <option value="Playfair">Playfair Serif</option>
+                        <option value="Impact">Impact Stencil</option>
+                    `;
+                }
+            }
+
+            const letteringTextInput = document.getElementById('lettering-text-input');
+            if (letteringTextInput && !letteringTextInput.value) {
+                letteringTextInput.value = 'Z-VORM';
+            }
+            updateLetteringPreview();
+        }
+    } else {
+        if (customLetteringOptions) customLetteringOptions.style.display = 'none';
+        const customTextInput = document.getElementById('modal-custom-text-input');
+        if (product.customTextEnabled) {
+            if (customTextContainer) customTextContainer.style.display = 'block';
+            if (customTextInput) customTextInput.value = '';
+        } else {
+            if (customTextContainer) customTextContainer.style.display = 'none';
+            if (customTextInput) customTextInput.value = '';
+        }
     }
 
     const colorContainer = document.getElementById('modal-color-container');
@@ -404,10 +449,79 @@ function openProductModal(product) {
     updateTotalPrice();
     if (modalEl) modalEl.style.display = 'flex';
     
-    // Deep Linking: Update the browser URL without reloading
     const newUrl = new URL(window.location);
     newUrl.searchParams.set('item', product.id);
     window.history.pushState({}, '', newUrl);
+}
+
+function updateLetteringPreview() {
+    const textInput = document.getElementById('lettering-text-input');
+    const heightSelect = document.getElementById('lettering-height-select');
+    const mountingSelect = document.getElementById('lettering-mounting-select');
+    const fontSelect = document.getElementById('lettering-font-select');
+    const stencilCheckbox = document.getElementById('lettering-stencil-checkbox');
+    const charCountDisplay = document.getElementById('char-count-display');
+    const livePreviewBox = document.getElementById('live-lettering-preview');
+    const priceEl = document.getElementById('modal-total-price');
+
+    const rawText = textInput ? textInput.value || 'Z-VORM' : 'Z-VORM';
+    const heightTier = heightSelect ? heightSelect.value : '10cm';
+    const mountingType = mountingSelect ? mountingSelect.value : 'wall';
+    const selectedFont = fontSelect ? fontSelect.value : 'Montserrat';
+    const addStencil = stencilCheckbox ? stencilCheckbox.checked : false;
+
+    const billedCharacters = rawText.replace(/\s+/g, '');
+    const charCount = billedCharacters.length;
+
+    if (charCountDisplay) {
+        charCountDisplay.innerText = `${charCount} billable characters (${rawText.length} total with spaces)`;
+    }
+
+    const heightMultipliers = {
+        "5cm": 0.6,
+        "10cm": 1.0,
+        "15cm": 1.6,
+        "20cm": 2.4
+    };
+
+    const multiplier = heightMultipliers[heightTier] || 1.0;
+    const baseCharPrice = activeBasePrice > 0 ? activeBasePrice : 3.50;
+    
+    let total = charCount * baseCharPrice * multiplier;
+
+    if (mountingType === 'freestanding') {
+        total *= 1.20;
+    }
+
+    if (mountingType === 'wall' && addStencil) {
+        total += 5.00;
+    }
+
+    const qtyInput = document.getElementById('modal-qty');
+    const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
+    total *= qty;
+
+    if (priceEl) priceEl.innerText = `€${total.toFixed(2)}`;
+
+    if (livePreviewBox) {
+        livePreviewBox.innerText = rawText;
+        
+        let fontFamilyRule = 'sans-serif';
+        const foundFont = availableFonts.find(f => f.name === selectedFont);
+        if (foundFont && foundFont.family) {
+            fontFamilyRule = foundFont.family;
+        } else if (selectedFont === 'Futura') {
+            fontFamilyRule = "'Century Gothic', sans-serif";
+        } else if (selectedFont === 'Playfair') {
+            fontFamilyRule = "'Playfair Display', serif";
+        } else if (selectedFont === 'Impact') {
+            fontFamilyRule = "Impact, sans-serif";
+        } else {
+            fontFamilyRule = `'${selectedFont}', sans-serif`;
+        }
+
+        livePreviewBox.style.fontFamily = fontFamilyRule;
+    }
 }
 
 function updateModalGallery() {
@@ -459,6 +573,12 @@ function adjustQty(change) {
 }
 
 function updateTotalPrice() {
+    const customLetteringOptions = document.getElementById('custom-lettering-options');
+    if (customLetteringOptions && customLetteringOptions.style.display !== 'none') {
+        updateLetteringPreview();
+        return;
+    }
+
     const qtyInput = document.getElementById('modal-qty');
     const priceEl = document.getElementById('modal-total-price');
     const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
@@ -470,7 +590,6 @@ function closeProductModal() {
     const modalEl = document.getElementById('product-modal');
     if (modalEl) modalEl.style.display = 'none';
     
-    // Deep Linking: Revert browser URL cleanly
     const newUrl = new URL(window.location);
     newUrl.searchParams.delete('item');
     window.history.pushState({}, '', newUrl);
@@ -485,22 +604,71 @@ function closeProductModalOnBackground(event) {
 function submitShopOrder() {
     const qtyInput = document.getElementById('modal-qty');
     const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
-    const customTextInput = document.getElementById('modal-custom-text-input');
-    const customText = customTextInput ? customTextInput.value.trim() : '';
+    
+    const customLetteringOptions = document.getElementById('custom-lettering-options');
+    const isLettering = customLetteringOptions && customLetteringOptions.style.display !== 'none';
 
     const productImages = (activeProduct.images && activeProduct.images.length > 0) ? activeProduct.images : [activeProduct.image || '/uploads/default.jpg'];
 
-    const cartItem = {
-        id: activeProduct.id + '-' + activeSelectedColor + '-' + activeSelectedSize + '-' + customText,
-        productId: activeProduct.id,
-        name: activeProduct.name,
-        price: activeBasePrice,
-        qty: qty,
-        color: activeSelectedColor,
-        size: activeSelectedSize,
-        customText: customText,
-        image: productImages[0]
-    };
+    let cartItem;
+
+    if (isLettering) {
+        const textInput = document.getElementById('lettering-text-input');
+        const heightSelect = document.getElementById('lettering-height-select');
+        const mountingSelect = document.getElementById('lettering-mounting-select');
+        const fontSelect = document.getElementById('lettering-font-select');
+        const stencilCheckbox = document.getElementById('lettering-stencil-checkbox');
+
+        const rawText = textInput ? textInput.value || 'Z-VORM' : 'Z-VORM';
+        const heightTier = heightSelect ? heightSelect.value : '10cm';
+        const mountingType = mountingSelect ? mountingSelect.value : 'wall';
+        const selectedFont = fontSelect ? fontSelect.value : 'Montserrat';
+        const addStencil = stencilCheckbox ? stencilCheckbox.checked : false;
+
+        const billedCharacters = rawText.replace(/\s+/g, '');
+        const charCount = billedCharacters.length;
+
+        const heightMultipliers = { "5cm": 0.6, "10cm": 1.0, "15cm": 1.6, "20cm": 2.4 };
+        const multiplier = heightMultipliers[heightTier] || 1.0;
+        let unitPrice = charCount * activeBasePrice * multiplier;
+        if (mountingType === 'freestanding') unitPrice *= 1.20;
+        if (mountingType === 'wall' && addStencil) unitPrice += 5.00;
+
+        cartItem = {
+            id: activeProduct.id + '-' + activeSelectedColor + '-' + heightTier + '-' + mountingType + '-' + rawText,
+            productId: activeProduct.id,
+            name: activeProduct.name,
+            price: unitPrice,
+            qty: qty,
+            color: activeSelectedColor,
+            size: heightTier,
+            customizations: {
+                text: rawText,
+                billableCount: charCount,
+                height: heightTier,
+                mounting: mountingType,
+                font: selectedFont,
+                stencil: addStencil,
+                color: activeSelectedColor
+            },
+            image: productImages[0]
+        };
+    } else {
+        const customTextInput = document.getElementById('modal-custom-text-input');
+        const customText = customTextInput ? customTextInput.value.trim() : '';
+
+        cartItem = {
+            id: activeProduct.id + '-' + activeSelectedColor + '-' + activeSelectedSize + '-' + customText,
+            productId: activeProduct.id,
+            name: activeProduct.name,
+            price: activeBasePrice,
+            qty: qty,
+            color: activeSelectedColor,
+            size: activeSelectedSize,
+            customText: customText,
+            image: productImages[0]
+        };
+    }
 
     const existingIndex = cart.findIndex(item => item.id === cartItem.id);
     if (existingIndex > -1) {
@@ -547,15 +715,9 @@ function initCartUI() {
                     <h3 style="font-size: 1.2rem; margin: 0;">Shopping Bag</h3>
                     <button onclick="toggleCartDrawer()" title="Close" style="background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--text-main); font-weight: 700; padding: 0.2rem; transition: color 0.2s;" onmouseenter="this.style.color='var(--primary)'" onmouseleave="this.style.color='var(--text-main)'">✕</button>
                 </div>
-                <div id="cart-items-container" style="max-height: calc(100vh - 250px); overflow-y: auto; display: flex; flex-direction: column; gap: 1rem;"></div>
+                <div id="cart-items-container" style="max-height: calc(100vh - 300px); overflow-y: auto; display: flex; flex-direction: column; gap: 1rem;"></div>
             </div>
-            <div style="border-top: 1px solid var(--border); padding-top: 1.5rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                    <span style="font-weight: 600; color: var(--text-muted);">Subtotal:</span>
-                    <span id="cart-subtotal" style="font-size: 1.3rem; font-weight: 800; color: var(--text-main);">€0.00</span>
-                </div>
-                <button onclick="proceedToCheckout()" style="width: 100%; background: var(--primary); color: white; border: none; padding: 0.9rem; border-radius: 8px; font-weight: 700; cursor: pointer;">Proceed to Checkout →</button>
-            </div>
+            <div style="border-top: 1px solid var(--border); padding-top: 1rem;" id="cart-footer-summary"></div>
         `;
         document.body.appendChild(drawerDiv);
     }
@@ -635,14 +797,22 @@ function openCartDrawer() {
 function updateCartUI() {
     const countEl = document.getElementById('cart-count');
     const container = document.getElementById('cart-items-container');
-    const subtotalEl = document.getElementById('cart-subtotal');
+    const cartFooter = document.getElementById('cart-footer-summary');
 
     const totalCount = cart.reduce((sum, item) => sum + item.qty, 0);
     if (countEl) countEl.innerText = totalCount;
 
     if (cart.length === 0) {
         if (container) container.innerHTML = `<p style="color: var(--text-muted); text-align: center; padding: 2rem 0;">Your shopping bag is empty.</p>`;
-        if (subtotalEl) subtotalEl.innerText = '€0.00';
+        if (cartFooter) {
+            cartFooter.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <span style="font-weight: 600; color: var(--text-muted);">Subtotal:</span>
+                    <span style="font-size: 1.3rem; font-weight: 800; color: var(--text-main);">€0.00</span>
+                </div>
+                <button onclick="proceedToCheckout()" style="width: 100%; background: var(--primary); color: white; border: none; padding: 0.9rem; border-radius: 8px; font-weight: 700; cursor: pointer;">Proceed to Checkout →</button>
+            `;
+        }
         return;
     }
 
@@ -650,16 +820,31 @@ function updateCartUI() {
     if (container) {
         container.innerHTML = cart.map((item, index) => {
             subtotal += item.price * item.qty;
+            let customDetailsHtml = '';
+            if (item.customizations) {
+                customDetailsHtml = `
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">
+                        Text: "${item.customizations.text}"<br>
+                        Height: ${item.customizations.height} | Mounting: ${item.customizations.mounting}<br>
+                        Font: ${item.customizations.font} ${item.customizations.stencil ? '| Stencil (+€5)' : ''}
+                    </div>
+                `;
+            } else {
+                customDetailsHtml = `
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">
+                        ${item.color !== 'Standard' ? `Color: ${item.color}` : ''} 
+                        ${item.size ? `| Size: ${item.size}` : ''}
+                        ${item.customText ? `<br>Custom Text: "${item.customText}"` : ''}
+                    </div>
+                `;
+            }
+
             return `
                 <div style="display: flex; gap: 1rem; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
                     <img src="${optimizeImageUrl(item.image)}" alt="${item.name}" loading="lazy" style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border);">
                     <div style="flex-grow: 1;">
                         <h4 style="font-size: 0.95rem; margin: 0 0 0.2rem 0;">${item.name}</h4>
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">
-                            ${item.color !== 'Standard' ? `Color: ${item.color}` : ''} 
-                            ${item.size ? `| Size: ${item.size}` : ''}
-                            ${item.customText ? `<br>Custom Text: "${item.customText}"` : ''}
-                        </div>
+                        ${customDetailsHtml}
                         <div style="font-size: 0.85rem; font-weight: 700; color: var(--primary); margin-top: 0.3rem;">€${(item.price * item.qty).toFixed(2)} (${item.qty}x)</div>
                     </div>
                     <button onclick="removeFromCart(${index})" style="background: none; border: none; color: #ef4444; cursor: pointer; font-weight: bold;">✕</button>
@@ -668,7 +853,43 @@ function updateCartUI() {
         }).join('');
     }
 
-    if (subtotalEl) subtotalEl.innerText = `€${subtotal.toFixed(2)}`;
+    const threshold = storeConfig.freeShippingThreshold;
+    const standardShipping = storeConfig.standardShippingFee;
+    const shippingFee = subtotal >= threshold ? 0.00 : standardShipping;
+    const grandTotal = subtotal + shippingFee;
+
+    const progressPercent = Math.min(100, (subtotal / threshold) * 100);
+    const remainingForFree = Math.max(0, threshold - subtotal);
+
+    let progressBarHtml = `
+        <div style="background: #f8fafc; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1rem;">
+            <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-main); margin-bottom: 0.4rem; display: flex; justify-content: space-between;">
+                <span>${remainingForFree > 0 ? `Add €${remainingForFree.toFixed(2)} more for Free Shipping!` : '🎉 You unlocked Free Shipping!'}</span>
+            </div>
+            <div style="width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
+                <div style="width: ${progressPercent}%; height: 100%; background: var(--primary); transition: width 0.3s ease;"></div>
+            </div>
+        </div>
+    `;
+
+    if (cartFooter) {
+        cartFooter.innerHTML = `
+            ${progressBarHtml}
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; font-size: 0.9rem;">
+                <span style="color: var(--text-muted);">Subtotal:</span>
+                <span style="font-weight: 600;">€${subtotal.toFixed(2)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; font-size: 0.9rem;">
+                <span style="color: var(--text-muted);">Shipping:</span>
+                <span style="font-weight: 600; color: ${shippingFee === 0 ? '#10b981' : 'inherit'};">${shippingFee === 0 ? 'FREE' : '€' + shippingFee.toFixed(2)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-top: 1px solid var(--border); padding-top: 0.8rem;">
+                <span style="font-weight: 600; color: var(--text-main);">Total:</span>
+                <span style="font-size: 1.3rem; font-weight: 800; color: var(--text-main);">€${grandTotal.toFixed(2)}</span>
+            </div>
+            <button onclick="proceedToCheckout()" style="width: 100%; background: var(--primary); color: white; border: none; padding: 0.9rem; border-radius: 8px; font-weight: 700; cursor: pointer;">Proceed to Checkout →</button>
+        `;
+    }
 }
 
 function removeFromCart(index) {
@@ -692,7 +913,6 @@ function closeCheckoutModal() {
     if (checkoutModal) checkoutModal.style.display = 'none';
 }
 
-// Updated Mollie Checkout Integration Function
 async function submitOrderDirect(e) {
     e.preventDefault();
     const form = document.getElementById('checkout-form');
@@ -708,7 +928,6 @@ async function submitOrderDirect(e) {
 
         const data = await response.json();
         if (data.checkoutUrl) {
-            // Redirect customer to secure Mollie hosted checkout
             window.location.href = data.checkoutUrl;
         } else {
             showToast(data.error || 'Could not initiate payment. Please try again.', true);
@@ -719,7 +938,6 @@ async function submitOrderDirect(e) {
     }
 }
 
-// Contact Workshop Modal Handlers
 function openContactModal() {
     const modal = document.getElementById('contact-modal');
     if (modal) modal.style.display = 'flex';
@@ -1120,22 +1338,73 @@ const legalContent = {
     shipping: {
         title: "Shipping & Delivery Times",
         html: `
-            <h4 style="color: var(--text-main);">Delivery Times</h4>
-            <p>Our catalog items (such as wall displays and gadgets) are produced on-demand or in small batches in our micro-factory. The average delivery time is <strong>2 to 4 business days</strong>.</p>
+            <h4 style="color: var(--text-main); margin-top: 0;">1. Production & Dispatch Times</h4>
+            <p>Most catalog items and custom 3D prints are crafted on-demand in our workshop in Retie, Belgium. Standard production lead times range between <strong>3 to 5 business days</strong> prior to dispatch.</p>
+
+            <h4 style="color: var(--text-main);">2. Delivery Options & Coverage</h4>
+            <p>We ship securely across Belgium, the Netherlands, Germany, and France. In compliance with e-commerce regulations regarding delivery choices, we offer reliable parcel carrier routing directly to your home address or designated local pickup points.</p>
+
+            <h4 style="color: var(--text-main);">3. Shipping Costs</h4>
+            <p>Shipping rates are calculated dynamically at checkout based on package dimensions, weight, and destination country. Tracking details are automatically emailed to you as soon as your batch leaves our facility.</p>
         `
     },
     privacy: {
         title: "Privacy Policy",
         html: `
-            <h4 style="color: var(--text-main);">1. Data Processing</h4>
-            <p>Z-Vorm respects the privacy of all users and treats personal information confidentially.</p>
+            <h4 style="color: var(--text-main); margin-top: 0;">1. Data Controller</h4>
+            <p>Z-Vorm, operated from Retie, Belgium, is responsible for the processing of your personal data as set out in this privacy statement. If you have any questions regarding data protection, you can reach us at <strong>contact@z-vorm.nl</strong>.</p>
+
+            <h4 style="color: var(--text-main);">2. Personal Data We Collect</h4>
+            <p>We process personal data because you use our services, purchase our products, or provide them to us directly. This includes:</p>
+            <ul style="margin: 0.5rem 0 1rem 1.2rem; padding: 0;">
+                <li>First and last name</li>
+                <li>Delivery and billing address</li>
+                <li>Email address and telephone number</li>
+                <li>Payment transaction details (processed securely via Mollie)</li>
+                <li>Custom product configurations (such as text, font choices, dimensions, and uploaded STL files)</li>
+            </ul>
+
+            <h4 style="color: var(--text-main);">3. Purpose and Legal Basis</h4>
+            <p>We process your data based on the following legal grounds under the GDPR:</p>
+            <ul style="margin: 0.5rem 0 1rem 1.2rem; padding: 0;">
+                <li><strong>Execution of an agreement:</strong> To process your orders, manufacture custom 3D prints or letters, and handle shipping/invoicing.</li>
+                <li><strong>Legal obligation:</strong> To comply with Belgian tax, accounting, and commercial record-keeping laws.</li>
+            </ul>
+
+            <h4 style="color: var(--text-main);">4. Data Retention</h4>
+            <p>We do not store your personal data longer than strictly necessary to realize the purposes for which your data is collected. Standard customer and transaction records are retained for a maximum of 5 to 7 years in alignment with Belgian commercial and fiscal obligations.</p>
+
+            <h4 style="color: var(--text-main);">5. Sharing with Third Parties</h4>
+            <p>Z-Vorm only shares your data with third parties when necessary for the execution of our agreement with you or to comply with a legal obligation. This includes our secure payment provider (Mollie), email notification service (Resend), and trusted logistics couriers for parcel delivery.</p>
+
+            <h4 style="color: var(--text-main);">6. Your Rights</h4>
+            <p>Under the GDPR, you have the right to access, correct, or delete your personal data. You can submit a request via <strong>contact@z-vorm.nl</strong>.</p>
         `
     },
     terms: {
         title: "Terms & Conditions",
         html: `
-            <h4 style="color: var(--text-main);">Article 1: Applicability</h4>
-            <p>These general terms and conditions apply to every offer made by Z-Vorm.</p>
+            <h4 style="color: var(--text-main); margin-top: 0;">Article 1: Identity of the Entrepreneur</h4>
+            <p><strong>Z-Vorm</strong><br>
+            Location: Retie, Belgium<br>
+            Email: contact@z-vorm.nl<br>
+            Website: https://z-vorm.nl</p>
+
+            <h4 style="color: var(--text-main);">Article 2: Applicability</h4>
+            <p>These general terms and conditions apply to every offer from Z-Vorm and to every distance contract concluded between Z-Vorm and consumers/businesses. Before concluding a distance contract, the text of these terms and conditions is made available to the buyer.</p>
+
+            <h4 style="color: var(--text-main);">Article 3: Prices & Custom Manufacturing</h4>
+            <p>All prices stated on our catalog and custom configurators are in Euros (€). For consumers within the EU, prices include statutory VAT where applicable. Because products like Custom 3D Letters, Business Logos, and custom B2B prints are manufactured on-demand to precise specifications provided by the customer, specifications cannot be altered once production has commenced in our workshop.</p>
+
+            <h4 style="color: var(--text-main);">Article 4: Right of Withdrawal (Exceptions for Custom Goods)</h4>
+            <p>Consumers have the right to withdraw from a standard purchase agreement within 14 days without giving any reason. <br><br>
+            <em>Please note:</em> In accordance with Article VI.53 of the Belgian Code of Economic Law, the right of withdrawal <strong>does not apply</strong> to goods manufactured to the consumer's specific instructions or clearly personalized items (such as custom 3D-printed name letters, bespoke business logos, or customized dimensional signage).</p>
+
+            <h4 style="color: var(--text-main);">Article 5: Payment & Security</h4>
+            <p>Payments are processed securely via Mollie B.V. Orders are processed and scheduled for production only upon receipt of payment confirmation.</p>
+
+            <h4 style="color: var(--text-main);">Article 6: Governing Law</h4>
+            <p>All agreements, offers, and general terms and conditions are exclusively governed by Belgian law. Any disputes shall be submitted to the competent courts in the region of our workshop's location.</p>
         `
     }
 };
