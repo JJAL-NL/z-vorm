@@ -112,7 +112,7 @@ async function initDB() {
 
     const client = new MongoClient(mongoUri);
     await client.connect();
-    console.log("Connected successfully to MongoDB Atlas!");[cite: 6]
+    console.log("Connected successfully to MongoDB Atlas!");
     
     const db = client.db('zvorm_db');
     settingsCollection = db.collection('settings');
