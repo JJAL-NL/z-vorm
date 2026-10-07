@@ -575,7 +575,7 @@ app.post('/api/mollie-webhook', async (req, res) => {
         const orderId = payment.metadata && payment.metadata.orderId;
 
         if (payment.isPaid()) {
-            console.log(`Payment ${paymentId} for order ${orderId} was successfully paid!`);[cite: 6]
+            console.log(`Payment ${paymentId} for order ${orderId} was successfully paid!`);
             
             const shippingDetails = payment.metadata && payment.metadata.shippingDetails ? payment.metadata.shippingDetails : {};
             const customerEmail = shippingDetails.email;
@@ -716,7 +716,7 @@ app.post('/api/contact', contactUpload.single('attachment'), async (req, res) =>
 
 initDB().then(() => {
     app.listen(PORT, () => {
-        console.log(`Z-Vorm server running on http://localhost:${PORT}`);[cite: 6]
+        console.log(`Z-Vorm server running on http://localhost:${PORT}`);
     });
 }).catch(err => {
     console.error("Failed to connect to database on startup:", err);
