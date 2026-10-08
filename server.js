@@ -526,6 +526,7 @@ app.post('/api/create-payment', async (req, res) => {
         const totalAmount = subtotal + shippingFee;
 
         const orderId = 'ORD_' + Date.now();
+        const baseUrl = process.env.NODE_ENV === 'production' ? 'https://z-vorm.nl' : `${req.protocol}://${req.get('host')}`;
 
         const payment = await mollieClient.payments.create({
             amount: {
@@ -533,8 +534,8 @@ app.post('/api/create-payment', async (req, res) => {
                 value: totalAmount.toFixed(2),
             },
             description: `Z-Vorm Webshop Order (${orderId})`,
-            redirectUrl: `${req.protocol}://${req.get('host')}/shop?order=success&ref=${orderId}`,
-            webhookUrl: `${req.protocol}://${req.get('host')}/api/mollie-webhook`,
+            redirectUrl: `${baseUrl}/shop?order=success&ref=${orderId}`,
+            webhookUrl: `${baseUrl}/api/mollie-webhook`,
             metadata: {
                 orderId,
                 shippingDetails,
